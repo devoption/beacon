@@ -1,0 +1,42 @@
+name: Publish Readiness
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish-readiness:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      # This workflow is the final package-focused gate before release
+      # automation. It validates publishable Composer metadata, creates the
+      # dist archive that Packagist consumers receive, and verifies that the
+      # archive includes Beacon runtime assets while excluding dev-only files.
+      - name: Validate Composer package metadata
+        run: composer run validate-package-publish
+
+      - name: Create build directory
+        run: mkdir -p build
+
+      - name: Build Composer dist archive
+        run: composer archive --format=zip --file=build/beacon-publish-readiness
+
+      - name: Verify dist archive contents
+        run: bash .github/scripts/check-package-archive.sh build/beacon-publish-readiness.zip
