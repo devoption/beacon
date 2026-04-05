@@ -55,6 +55,7 @@
             "/.releaserc.json",
             "/build",
             "/docs/RELEASING.md",
+            "/scripts",
             "/node_modules",
             "/package-lock.json",
             "/package.json",
@@ -78,6 +79,7 @@
     },
     "scripts": {
         "test": "vendor/bin/pest",
+        "test-laravel-13-compat": "bash scripts/test-laravel-13-compat.sh",
         "validate-package": "@composer validate --strict --no-check-publish",
         "validate-package-publish": "@composer validate --strict"
     },

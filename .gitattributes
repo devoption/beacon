@@ -7,5 +7,6 @@
 /package.json export-ignore
 /phpunit.xml.dist export-ignore
 /.releaserc.json export-ignore
+/scripts export-ignore
 /tests export-ignore
 /vendor export-ignore
