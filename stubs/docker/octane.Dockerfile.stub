@@ -1,0 +1,47 @@
+ARG PHP_VERSION=8.4
+
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock* ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-scripts \
+    --no-progress \
+    --prefer-dist
+
+FROM php:${PHP_VERSION}-cli-alpine AS beacon
+
+WORKDIR /var/www/html
+
+RUN apk add --no-cache \
+    git \
+    icu-data-full \
+    icu-libs \
+    libstdc++ \
+    linux-headers \
+    oniguruma-dev \
+    $PHPIZE_DEPS \
+    && pecl install swoole \
+    && docker-php-ext-enable swoole \
+    && docker-php-ext-install \
+        bcmath \
+        opcache \
+        pcntl \
+        pdo_mysql \
+    && apk del $PHPIZE_DEPS \
+    && rm -rf /tmp/pear /var/cache/apk/*
+
+COPY --from=vendor /app/vendor ./vendor
+COPY . .
+
+RUN cp .env.example .env 2>/dev/null || true \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || true
+
+LABEL org.opencontainers.image.title="{{application_name}}"
+LABEL io.devoption.beacon.runtime="octane"
+
+EXPOSE 8000
+
+CMD ["php", "artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=8000"]
