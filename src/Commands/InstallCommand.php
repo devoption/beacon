@@ -44,8 +44,8 @@ class InstallCommand extends Command
 
             $this->components->error(
                 $message !== ''
-                    ? sprintf('Failed to ensure Octane is available: %s', $message)
-                    : 'Failed to ensure Octane is available.'
+                    ? sprintf('Beacon installation failed: %s', $message)
+                    : 'Beacon installation failed.'
             );
 
             return self::FAILURE;
@@ -135,7 +135,7 @@ class InstallCommand extends Command
         }
 
         $counts = array_count_values(array_map(
-            static fn (FileWriteStatus $status): string => $status->value,
+            fn (FileWriteStatus $status): string => $this->formatFileWriteStatus($status),
             $statuses,
         ));
 
@@ -148,5 +148,15 @@ class InstallCommand extends Command
         ));
 
         return sprintf('Mixed (%s)', $summary);
+    }
+
+    protected function formatFileWriteStatus(FileWriteStatus $status): string
+    {
+        return match ($status) {
+            FileWriteStatus::Created => 'Created',
+            FileWriteStatus::Overwritten => 'Overwritten',
+            FileWriteStatus::Skipped => 'Skipped',
+            FileWriteStatus::Unchanged => 'Unchanged',
+        };
     }
 }

@@ -3,18 +3,11 @@
 declare(strict_types=1);
 
 use DevOption\Beacon\BeaconServiceProvider;
+use Illuminate\Testing\PendingCommand;
 use Illuminate\Support\Facades\Process;
 
-it('boots the package service provider in testbench', function (): void {
-    expect($this->app->getProvider(BeaconServiceProvider::class))->not->toBeNull();
-});
-
-it('guides the user through the install skeleton with prompts', function (): void {
-    $directory = beaconTestApplicationDirectory();
-    $originalBasePath = $this->app->basePath();
-
-    $this->app->setBasePath($directory);
-
+function fakeOctaneComposerRequire(string $directory): void
+{
     Process::fake(function ($process) use ($directory) {
         if ($process->command === [
             'composer',
@@ -26,39 +19,67 @@ it('guides the user through the install skeleton with prompts', function (): voi
             $manifest = json_decode((string) file_get_contents($directory.'/composer.json'), true, 512, JSON_THROW_ON_ERROR);
             $manifest['require']['laravel/octane'] = '^2.0';
 
-            file_put_contents(
+            if (file_put_contents(
                 $directory.'/composer.json',
                 json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL
-            );
+            ) === false) {
+                throw new RuntimeException(sprintf('Unable to update composer manifest [%s].', $directory.'/composer.json'));
+            }
 
             return Process::result('Installed laravel/octane.', '', 0);
         }
 
         return Process::result();
     });
+}
+
+function expectBeaconInstallPrompts(
+    PendingCommand $command,
+    string $applicationName = 'Beacon Demo',
+    string $runtime = 'octane',
+    string $deploymentTarget = 'docker-and-helm',
+    bool $updateComposerScripts = true,
+): PendingCommand {
+    return $command
+        ->expectsPromptsIntro('Beacon will guide you through the initial production install setup.')
+        ->expectsQuestion('What is the application name?', $applicationName)
+        ->expectsChoice(
+            'Which application runtime should Beacon prepare for?',
+            $runtime,
+            [
+                'php-fpm' => 'PHP-FPM',
+                'octane' => 'Laravel Octane',
+            ]
+        )
+        ->expectsChoice(
+            'Which deployment scaffolding should Beacon plan to generate?',
+            $deploymentTarget,
+            [
+                'docker' => 'Dockerfile',
+                'helm' => 'Helm chart',
+                'docker-and-helm' => 'Dockerfile and Helm chart',
+            ]
+        )
+        ->expectsConfirmation(
+            'Should Beacon plan to update Composer scripts during installation?',
+            $updateComposerScripts ? 'yes' : 'no'
+        );
+}
+
+it('boots the package service provider in testbench', function (): void {
+    expect($this->app->getProvider(BeaconServiceProvider::class))->not->toBeNull();
+});
+
+it('guides the user through the install skeleton with prompts', function (): void {
+    $directory = beaconTestApplicationDirectory();
+    $originalBasePath = $this->app->basePath();
+
+    $this->app->setBasePath($directory);
+
+    fakeOctaneComposerRequire($directory);
 
     try {
-        $this->artisan('beacon:install')
-            ->expectsPromptsIntro('Beacon will guide you through the initial production install setup.')
-            ->expectsQuestion('What is the application name?', '  Beacon Demo  ')
-            ->expectsChoice(
-                'Which application runtime should Beacon prepare for?',
-                'octane',
-                [
-                    'php-fpm' => 'PHP-FPM',
-                    'octane' => 'Laravel Octane',
-                ]
-            )
-            ->expectsChoice(
-                'Which deployment scaffolding should Beacon plan to generate?',
-                'docker-and-helm',
-                [
-                    'docker' => 'Dockerfile',
-                    'helm' => 'Helm chart',
-                    'docker-and-helm' => 'Dockerfile and Helm chart',
-                ]
-            )
-            ->expectsConfirmation('Should Beacon plan to update Composer scripts during installation?', 'yes')
+        expectBeaconInstallPrompts($this->artisan('beacon:install'), '  Beacon Demo  ')
             ->expectsOutputToContain('Install skeleton summary')
             ->expectsOutputToContain('Beacon Demo')
             ->expectsOutputToContain('Laravel Octane')
@@ -107,51 +128,10 @@ it('is idempotent when the installer is run twice with the same answers', functi
 
     $this->app->setBasePath($directory);
 
-    Process::fake(function ($process) use ($directory) {
-        if ($process->command === [
-            'composer',
-            'require',
-            'laravel/octane',
-            '--no-interaction',
-            '--no-progress',
-        ]) {
-            $manifest = json_decode((string) file_get_contents($directory.'/composer.json'), true, 512, JSON_THROW_ON_ERROR);
-            $manifest['require']['laravel/octane'] = '^2.0';
-
-            file_put_contents(
-                $directory.'/composer.json',
-                json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL
-            );
-
-            return Process::result('Installed laravel/octane.', '', 0);
-        }
-
-        return Process::result();
-    });
+    fakeOctaneComposerRequire($directory);
 
     $runInstaller = function (): void {
-        $this->artisan('beacon:install')
-            ->expectsPromptsIntro('Beacon will guide you through the initial production install setup.')
-            ->expectsQuestion('What is the application name?', 'Beacon Demo')
-            ->expectsChoice(
-                'Which application runtime should Beacon prepare for?',
-                'octane',
-                [
-                    'php-fpm' => 'PHP-FPM',
-                    'octane' => 'Laravel Octane',
-                ]
-            )
-            ->expectsChoice(
-                'Which deployment scaffolding should Beacon plan to generate?',
-                'docker-and-helm',
-                [
-                    'docker' => 'Dockerfile',
-                    'helm' => 'Helm chart',
-                    'docker-and-helm' => 'Dockerfile and Helm chart',
-                ]
-            )
-            ->expectsConfirmation('Should Beacon plan to update Composer scripts during installation?', 'yes')
-            ->assertSuccessful();
+        expectBeaconInstallPrompts($this->artisan('beacon:install'))->assertSuccessful();
     };
 
     try {
@@ -161,27 +141,7 @@ it('is idempotent when the installer is run twice with the same answers', functi
         $firstChart = file_get_contents($directory.'/charts/beacon-demo/values.yaml');
         $firstManifest = file_get_contents($directory.'/composer.json');
 
-        $this->artisan('beacon:install')
-            ->expectsPromptsIntro('Beacon will guide you through the initial production install setup.')
-            ->expectsQuestion('What is the application name?', 'Beacon Demo')
-            ->expectsChoice(
-                'Which application runtime should Beacon prepare for?',
-                'octane',
-                [
-                    'php-fpm' => 'PHP-FPM',
-                    'octane' => 'Laravel Octane',
-                ]
-            )
-            ->expectsChoice(
-                'Which deployment scaffolding should Beacon plan to generate?',
-                'docker-and-helm',
-                [
-                    'docker' => 'Dockerfile',
-                    'helm' => 'Helm chart',
-                    'docker-and-helm' => 'Dockerfile and Helm chart',
-                ]
-            )
-            ->expectsConfirmation('Should Beacon plan to update Composer scripts during installation?', 'yes')
+        expectBeaconInstallPrompts($this->artisan('beacon:install'))
             ->expectsOutputToContain('Already available')
             ->expectsOutputToContain('Unchanged')
             ->assertSuccessful();
@@ -209,27 +169,11 @@ it('fails gracefully when octane installation cannot be completed', function ():
         '*' => Process::result('', 'Composer require failed.', 1),
     ]);
 
-    $this->artisan('beacon:install')
-        ->expectsPromptsIntro('Beacon will guide you through the initial production install setup.')
-        ->expectsQuestion('What is the application name?', 'Beacon Demo')
-        ->expectsChoice(
-            'Which application runtime should Beacon prepare for?',
-            'octane',
-            [
-                'php-fpm' => 'PHP-FPM',
-                'octane' => 'Laravel Octane',
-            ]
-        )
-        ->expectsChoice(
-            'Which deployment scaffolding should Beacon plan to generate?',
-            'docker',
-            [
-                'docker' => 'Dockerfile',
-                'helm' => 'Helm chart',
-                'docker-and-helm' => 'Dockerfile and Helm chart',
-            ]
-        )
-        ->expectsConfirmation('Should Beacon plan to update Composer scripts during installation?', 'no')
-        ->expectsOutputToContain('Failed to ensure Octane is available: Unable to install Laravel Octane. Composer require failed.')
+    expectBeaconInstallPrompts(
+        $this->artisan('beacon:install'),
+        deploymentTarget: 'docker',
+        updateComposerScripts: false,
+    )
+        ->expectsOutputToContain('Beacon installation failed: Unable to install Laravel Octane. Composer require failed.')
         ->assertExitCode(1);
 });

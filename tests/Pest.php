@@ -52,10 +52,15 @@ function beaconTestApplicationDirectory(array $manifest = []): string
         ],
     ];
 
-    file_put_contents(
-        $directory.'/composer.json',
-        json_encode(array_replace_recursive($defaultManifest, $manifest), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL
-    );
+    $composerJsonPath = $directory.'/composer.json';
+    $composerJson = json_encode(
+        array_replace_recursive($defaultManifest, $manifest),
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+    ).PHP_EOL;
+
+    if (file_put_contents($composerJsonPath, $composerJson) === false) {
+        throw new RuntimeException(sprintf('Unable to write composer manifest [%s].', $composerJsonPath));
+    }
 
     return $directory;
 }
