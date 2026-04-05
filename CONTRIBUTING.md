@@ -88,3 +88,9 @@ Out-of-scope examples:
 ## Release notes
 
 Maintainers should use [docs/RELEASING.md](https://github.com/devoption/beacon/blob/main/docs/RELEASING.md) for release automation and Packagist setup details.
+
+## Laravel Boost
+
+Beacon also ships Laravel Boost guidance for package users and contributors.
+
+See [docs/LARAVEL_BOOST.md](https://github.com/devoption/beacon/blob/main/docs/LARAVEL_BOOST.md) for the available Beacon-specific skills and when to use them.
