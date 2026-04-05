@@ -48,10 +48,15 @@
     },
     "archive": {
         "exclude": [
+            "/.gitattributes",
             "/.github",
             "/.phpunit.cache",
             "/.gitignore",
+            "/.releaserc.json",
             "/build",
+            "/node_modules",
+            "/package-lock.json",
+            "/package.json",
             "/phpunit.xml.dist",
             "/tests",
             "/vendor"
