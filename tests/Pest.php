@@ -34,3 +34,28 @@ function removeBeaconTestDirectory(string $directory): void
 
     rmdir($directory);
 }
+
+/**
+ * @param  array<string, mixed>  $manifest
+ */
+function beaconTestApplicationDirectory(array $manifest = []): string
+{
+    $directory = beaconTestTempDirectory();
+
+    $defaultManifest = [
+        'name' => 'acme/app',
+        'require' => [
+            'php' => '^8.3',
+        ],
+        'scripts' => [
+            'test' => '@php artisan test',
+        ],
+    ];
+
+    file_put_contents(
+        $directory.'/composer.json',
+        json_encode(array_replace_recursive($defaultManifest, $manifest), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL
+    );
+
+    return $directory;
+}

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace DevOption\Beacon\Commands;
 
+use DevOption\Beacon\Filesystem\FileWriteResult;
+use DevOption\Beacon\Filesystem\FileWriteStatus;
+use DevOption\Beacon\Helm\HelmChartWriteResult;
 use DevOption\Beacon\Install\InstallConfiguration;
 use DevOption\Beacon\Install\InstallConfigurationCollector;
+use DevOption\Beacon\Install\InstallResult;
+use DevOption\Beacon\Install\InstallWorkflow;
 use DevOption\Beacon\Octane\OctaneInstallationResult;
-use DevOption\Beacon\Octane\OctaneInstaller;
 use Illuminate\Console\Command;
 use Throwable;
 
@@ -20,7 +24,7 @@ class InstallCommand extends Command
 
     protected $description = 'Install Beacon into the current Laravel application';
 
-    public function handle(InstallConfigurationCollector $collector, OctaneInstaller $octaneInstaller): int
+    public function handle(InstallConfigurationCollector $collector, InstallWorkflow $workflow): int
     {
         intro('Beacon will guide you through the initial production install setup.');
 
@@ -34,7 +38,7 @@ class InstallCommand extends Command
         );
 
         try {
-            $octaneInstallation = $this->ensureOctaneIsAvailable($configuration, $octaneInstaller);
+            $result = $workflow->run($this->laravel->basePath(), $configuration);
         } catch (Throwable $throwable) {
             $message = trim($throwable->getMessage());
 
@@ -48,9 +52,10 @@ class InstallCommand extends Command
         }
 
         $this->displayConfigurationSummary($configuration);
-        $this->displayOctaneSummary($octaneInstallation);
+        $this->displayOctaneSummary($result->octane);
+        $this->displayArtifactSummary($result);
 
-        outro('Beacon collected your installation preferences. File generation will be added in follow-up issues.');
+        outro('Beacon installation completed.');
 
         return self::SUCCESS;
     }
@@ -65,18 +70,6 @@ class InstallCommand extends Command
             'Composer scripts',
             $configuration->updateComposerScripts ? 'Plan to update' : 'Leave unchanged'
         );
-        $this->components->info('No files were generated in this step.');
-    }
-
-    protected function ensureOctaneIsAvailable(
-        InstallConfiguration $configuration,
-        OctaneInstaller $octaneInstaller,
-    ): ?OctaneInstallationResult {
-        if ($configuration->runtime !== 'octane') {
-            return null;
-        }
-
-        return $octaneInstaller->ensureInstalled($this->laravel->basePath());
     }
 
     protected function displayOctaneSummary(?OctaneInstallationResult $octaneInstallation): void
@@ -87,5 +80,73 @@ class InstallCommand extends Command
 
         $this->components->info('Octane integration');
         $this->components->twoColumnDetail('Dependency', $octaneInstallation->summary());
+    }
+
+    protected function displayArtifactSummary(InstallResult $result): void
+    {
+        $this->components->info('Generated artifacts');
+
+        if ($result->dockerfile !== null) {
+            $this->components->twoColumnDetail('Dockerfile', $this->formatFileWriteResult($result->dockerfile));
+        }
+
+        if ($result->helmChart !== null) {
+            $this->components->twoColumnDetail('Helm chart', $this->formatHelmChartResult($result->helmChart));
+        }
+
+        $this->components->twoColumnDetail(
+            'Composer manifest',
+            $result->composerManifest !== null
+                ? $this->formatFileWriteResult($result->composerManifest)
+                : 'Left unchanged'
+        );
+    }
+
+    protected function formatFileWriteResult(FileWriteResult $result): string
+    {
+        return match ($result->status) {
+            FileWriteStatus::Created => 'Created',
+            FileWriteStatus::Overwritten => 'Overwritten',
+            FileWriteStatus::Skipped => 'Skipped',
+            FileWriteStatus::Unchanged => 'Unchanged',
+        };
+    }
+
+    protected function formatHelmChartResult(HelmChartWriteResult $result): string
+    {
+        $statuses = array_map(
+            static fn (FileWriteResult $file): FileWriteStatus => $file->status,
+            $result->files,
+        );
+
+        $uniqueStatuses = array_values(array_unique(array_map(
+            static fn (FileWriteStatus $status): string => $status->value,
+            $statuses,
+        )));
+
+        if (count($uniqueStatuses) === 1) {
+            $firstFile = array_values($result->files)[0];
+
+            return sprintf(
+                '%s (%d files)',
+                $this->formatFileWriteResult($firstFile),
+                count($result->files),
+            );
+        }
+
+        $counts = array_count_values(array_map(
+            static fn (FileWriteStatus $status): string => $status->value,
+            $statuses,
+        ));
+
+        ksort($counts);
+
+        $summary = implode(', ', array_map(
+            static fn (string $status, int $count): string => sprintf('%s: %d', $status, $count),
+            array_keys($counts),
+            $counts,
+        ));
+
+        return sprintf('Mixed (%s)', $summary);
     }
 }
