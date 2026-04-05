@@ -37,7 +37,11 @@ it('renders an octane dockerfile from the stub', function (): void {
 
     $contents = $generator->render($configuration);
 
-    expect($contents)->toContain('pecl install swoole')
+    expect($contents)->toContain('brotli-dev')
+        ->and($contents)->toContain('openssl-dev')
+        ->and($contents)->toContain('pecl install swoole')
+        ->and($contents)->toContain("brotli-dev \\\n    git")
+        ->and($contents)->toContain("oniguruma-dev \\\n    openssl-dev")
         ->and($contents)->toContain('LABEL io.devoption.beacon.runtime="octane"')
         ->and($contents)->toContain('EXPOSE 8000')
         ->and($contents)->toContain('CMD ["php", "artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=8000"]');
