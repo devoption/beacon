@@ -2,6 +2,7 @@
     "name": "devoption/beacon",
     "description": "Production-ready Docker and Helm support for Laravel applications, with guided installation, Octane integration, and streamlined build/deploy workflows.",
     "type": "library",
+    "license": "MIT",
     "keywords": [
         "laravel",
         "docker",
