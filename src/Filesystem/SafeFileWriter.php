@@ -49,7 +49,17 @@ final class SafeFileWriter
     private function persist(string $path, string $contents, FileWriteStatus $status): FileWriteResult
     {
         $directory = dirname($path);
-        $temporaryPath = tempnam($directory === '.' ? sys_get_temp_dir() : $directory, 'beacon-');
+        $temporaryDirectory = $directory;
+
+        if ($temporaryDirectory === '.') {
+            $temporaryDirectory = getcwd();
+
+            if ($temporaryDirectory === false) {
+                throw new RuntimeException(sprintf('Unable to determine the current working directory for [%s].', $path));
+            }
+        }
+
+        $temporaryPath = tempnam($temporaryDirectory, 'beacon-');
 
         if ($temporaryPath === false) {
             throw new RuntimeException(sprintf('Unable to create a temporary file for [%s].', $path));

@@ -112,3 +112,25 @@ it('throws when the target file exists and overwrite is not allowed', function (
         removeBeaconTestDirectory($directory);
     }
 });
+
+it('writes relative paths using a temporary file in the current working directory', function (): void {
+    $directory = beaconTestTempDirectory();
+    $originalWorkingDirectory = getcwd();
+
+    if ($originalWorkingDirectory === false) {
+        throw new RuntimeException('Unable to determine the original working directory.');
+    }
+
+    chdir($directory);
+
+    try {
+        $result = (new SafeFileWriter)->write('Dockerfile', 'FROM php:8.4-cli');
+
+        expect($result->status)->toBe(FileWriteStatus::Created)
+            ->and($directory.'/Dockerfile')->toBeFile()
+            ->and(file_get_contents($directory.'/Dockerfile'))->toBe('FROM php:8.4-cli');
+    } finally {
+        chdir($originalWorkingDirectory);
+        removeBeaconTestDirectory($directory);
+    }
+});
