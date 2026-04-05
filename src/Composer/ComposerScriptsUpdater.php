@@ -126,7 +126,7 @@ final readonly class ComposerScriptsUpdater
     {
         $section = $manifest[$key] ?? [];
 
-        if (! is_array($section)) {
+        if (! is_array($section) || ($section !== [] && array_is_list($section))) {
             throw new RuntimeException(sprintf('Composer manifest section [%s] must be an object-like map.', $key));
         }
 

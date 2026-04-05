@@ -44,7 +44,7 @@ it('removes stale beacon deploy entries when the selected target is docker only'
         applicationName: 'Beacon Demo',
         runtime: 'php-fpm',
         deploymentTarget: 'docker',
-        updateComposerScripts: false,
+        updateComposerScripts: true,
     );
 
     $manifest = $updater->updateManifest([
@@ -68,6 +68,26 @@ it('removes stale beacon deploy entries when the selected target is docker only'
             'lint' => 'Lint the codebase.',
             'beacon:build' => 'Build the Beacon production Docker image.',
         ]);
+});
+
+it('rejects list-shaped composer manifest sections', function (): void {
+    $updater = new ComposerScriptsUpdater(new SafeFileWriter);
+    $configuration = new InstallConfiguration(
+        applicationName: 'Beacon Demo',
+        runtime: 'php-fpm',
+        deploymentTarget: 'docker-and-helm',
+        updateComposerScripts: true,
+    );
+
+    expect(fn (): array => $updater->updateManifest([
+        'scripts' => [
+            '@php artisan test',
+            'vendor/bin/pint',
+        ],
+    ], $configuration))->toThrow(
+        RuntimeException::class,
+        'Composer manifest section [scripts] must be an object-like map.',
+    );
 });
 
 it('writes the updated composer manifest back to disk', function (): void {
