@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Laravel 11 / PHP 8.3
+            php: '8.3'
+            laravel: '^11.0'
+            testbench: '^9.0'
+            experimental: false
+          - name: Laravel 11 / PHP 8.4
+            php: '8.4'
+            laravel: '^11.0'
+            testbench: '^9.0'
+            experimental: false
+          - name: Laravel 12 / PHP 8.3
+            php: '8.3'
+            laravel: '^12.0'
+            testbench: '^10.0'
+            experimental: false
+          - name: Laravel 12 / PHP 8.4
+            php: '8.4'
+            laravel: '^12.0'
+            testbench: '^10.0'
+            experimental: false
+          - name: Laravel 12 / PHP 8.5
+            php: '8.5'
+            laravel: '^12.0'
+            testbench: '^10.0'
+            experimental: false
+          - name: Laravel 13 / PHP 8.3
+            php: '8.3'
+            laravel: '^13.0'
+            testbench: '^11.0'
+            experimental: false
+          - name: Laravel 13 / PHP 8.4
+            php: '8.4'
+            laravel: '^13.0'
+            testbench: '^11.0'
+            experimental: false
+          - name: Laravel 13 / PHP 8.5
+            php: '8.5'
+            laravel: '^13.0'
+            testbench: '^11.0'
+            experimental: false
+          - name: Laravel 13 / PHP nightly
+            php: nightly
+            laravel: '^13.0'
+            testbench: '^11.0'
+            experimental: true
+          # Laravel does not publish a dedicated "nightly" package line.
+          # The closest maintainable forward-compatibility check is the dev
+          # branch of laravel/framework plus the matching Testbench dev branch.
+          - name: Laravel dev / PHP 8.5
+            php: '8.5'
+            laravel: '13.x-dev@dev'
+            testbench: '11.x-dev@dev'
+            experimental: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate package metadata
+        run: composer validate --strict --no-check-publish
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ runner.os }}-${{ matrix.php }}-${{ matrix.laravel }}-${{ matrix.testbench }}
+          restore-keys: |
+            composer-${{ runner.os }}-${{ matrix.php }}-
+            composer-${{ runner.os }}-
+
+      - name: Install matrix dependencies
+        run: |
+          if [[ "${{ matrix.laravel }}" == *"dev"* ]]; then
+            composer update \
+              --no-interaction \
+              --no-progress \
+              --prefer-dist \
+              --with "laravel/framework:${{ matrix.laravel }}" \
+              --with "orchestra/testbench:${{ matrix.testbench }}"
+          else
+            composer update \
+              --no-interaction \
+              --no-progress \
+              --prefer-dist \
+              --with "illuminate/console:${{ matrix.laravel }}" \
+              --with "illuminate/process:${{ matrix.laravel }}" \
+              --with "illuminate/support:${{ matrix.laravel }}" \
+              --with "orchestra/testbench:${{ matrix.testbench }}"
+          fi
+
+      - name: Run test suite
+        run: composer test
