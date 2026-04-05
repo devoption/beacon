@@ -11,7 +11,7 @@ it('boots the package service provider in testbench', function (): void {
 it('guides the user through the install skeleton with prompts', function (): void {
     $this->artisan('beacon:install')
         ->expectsPromptsIntro('Beacon will guide you through the initial production install setup.')
-        ->expectsQuestion('What is the application name?', 'Beacon Demo')
+        ->expectsQuestion('What is the application name?', '  Beacon Demo  ')
         ->expectsChoice(
             'Which application runtime should Beacon prepare for?',
             'octane',
