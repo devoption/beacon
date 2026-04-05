@@ -90,7 +90,7 @@ it('supports overwrite behavior when writing a dockerfile', function (): void {
         updateComposerScripts: true,
     );
 
-    file_put_contents($directory.'/Dockerfile', 'FROM php:8.2-cli');
+    file_put_contents($directory.'/Dockerfile', 'FROM php:8.3-cli');
 
     try {
         $result = $generator->write($directory, $configuration, ExistingFileBehavior::Overwrite);
