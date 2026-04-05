@@ -14,16 +14,21 @@ Use this skill when working on:
 - package metadata and archive exclusions
 - release and Packagist maintainer documentation
 
-## Primary files
+## Package files
 
-- `.github/workflows/release.yml`
-- `.github/workflows/publish-readiness.yml`
-- `.releaserc.json`
-- `package.json`
-- `package-lock.json`
 - `composer.json`
 - `.gitattributes`
-- `docs/RELEASING.md`
+
+## Repository-only references
+
+These files are available in the source repository, but are not shipped in the Composer dist archive:
+
+- [`.github/workflows/release.yml`](https://github.com/devoption/beacon/blob/main/.github/workflows/release.yml)
+- [`.github/workflows/publish-readiness.yml`](https://github.com/devoption/beacon/blob/main/.github/workflows/publish-readiness.yml)
+- [`.releaserc.json`](https://github.com/devoption/beacon/blob/main/.releaserc.json)
+- [`package.json`](https://github.com/devoption/beacon/blob/main/package.json)
+- [`package-lock.json`](https://github.com/devoption/beacon/blob/main/package-lock.json)
+- [`docs/RELEASING.md`](https://github.com/devoption/beacon/blob/main/docs/RELEASING.md)
 
 ## Guidance
 

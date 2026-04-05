@@ -15,7 +15,7 @@ Use this skill when working on:
 - file-writing behavior for generated artifacts
 - stub template changes
 
-## Primary files
+## Package files
 
 - `src/Docker/*`
 - `src/Helm/*`
@@ -23,10 +23,15 @@ Use this skill when working on:
 - `src/Filesystem/*`
 - `stubs/docker/*`
 - `stubs/helm/**`
-- `tests/Unit/Docker/*`
-- `tests/Unit/Helm/*`
-- `tests/Unit/Composer/*`
-- `tests/Unit/Filesystem/*`
+
+## Repository-only references
+
+These files are available in the source repository, but are not shipped in the Composer dist archive:
+
+- [`tests/Unit/Docker/DockerfileGeneratorTest.php`](https://github.com/devoption/beacon/blob/main/tests/Unit/Docker/DockerfileGeneratorTest.php)
+- [`tests/Unit/Helm/HelmChartGeneratorTest.php`](https://github.com/devoption/beacon/blob/main/tests/Unit/Helm/HelmChartGeneratorTest.php)
+- [`tests/Unit/Composer/ComposerScriptsUpdaterTest.php`](https://github.com/devoption/beacon/blob/main/tests/Unit/Composer/ComposerScriptsUpdaterTest.php)
+- [`tests/Unit/Filesystem/SafeFileWriterTest.php`](https://github.com/devoption/beacon/blob/main/tests/Unit/Filesystem/SafeFileWriterTest.php)
 
 ## Guidance
 

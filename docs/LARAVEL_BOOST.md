@@ -2,6 +2,8 @@
 
 Beacon ships Laravel Boost support for contributors and downstream Laravel applications that install the package.
 
+Some shipped skills reference repository-only files such as tests, workflow files, and maintainer docs. When those files are not present in a Composer dist install, contributors should follow the linked GitHub source references instead.
+
 ## What Beacon provides
 
 Beacon currently includes:

@@ -15,7 +15,7 @@ Use this skill when working on:
 - install workflow orchestration
 - Octane install integration triggered from the command
 
-## Primary files
+## Package files
 
 - `src/Commands/InstallCommand.php`
 - `src/Install/InstallConfiguration.php`
@@ -23,8 +23,13 @@ Use this skill when working on:
 - `src/Install/InstallWorkflow.php`
 - `src/Install/InstallResult.php`
 - `src/Octane/*`
-- `tests/Feature/InstallCommandTest.php`
-- `tests/Feature/OctaneInstallerTest.php`
+
+## Repository-only references
+
+These files are available in the source repository, but are not shipped in the Composer dist archive:
+
+- [`tests/Feature/InstallCommandTest.php`](https://github.com/devoption/beacon/blob/main/tests/Feature/InstallCommandTest.php)
+- [`tests/Feature/OctaneInstallerTest.php`](https://github.com/devoption/beacon/blob/main/tests/Feature/OctaneInstallerTest.php)
 
 ## Guidance
 

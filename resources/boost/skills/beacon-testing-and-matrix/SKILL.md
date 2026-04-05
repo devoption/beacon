@@ -15,13 +15,18 @@ Use this skill when working on:
 - Laravel version compatibility updates
 - nightly or forward-compatibility workflow adjustments
 
-## Primary files
+## Package files
 
-- `tests/**`
-- `phpunit.xml.dist`
-- `.github/workflows/ci.yml`
-- `.github/workflows/publish-readiness.yml`
 - `composer.json`
+
+## Repository-only references
+
+These files are available in the source repository, but are not shipped in the Composer dist archive:
+
+- [`tests/`](https://github.com/devoption/beacon/tree/main/tests)
+- [`phpunit.xml.dist`](https://github.com/devoption/beacon/blob/main/phpunit.xml.dist)
+- [`.github/workflows/ci.yml`](https://github.com/devoption/beacon/blob/main/.github/workflows/ci.yml)
+- [`.github/workflows/publish-readiness.yml`](https://github.com/devoption/beacon/blob/main/.github/workflows/publish-readiness.yml)
 
 ## Guidance
 
