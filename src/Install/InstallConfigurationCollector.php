@@ -31,8 +31,12 @@ class InstallConfigurationCollector
 
     public function defaultConfiguration(string $basePath, ?string $applicationName = null): InstallConfiguration
     {
+        $normalizedApplicationName = $this->normalizeApplicationName($applicationName ?? '');
+
         return new InstallConfiguration(
-            applicationName: $this->normalizeApplicationName($applicationName ?? basename($basePath)),
+            applicationName: $normalizedApplicationName !== ''
+                ? $normalizedApplicationName
+                : basename($basePath),
             runtime: 'php-fpm',
             deploymentTarget: 'docker-and-helm',
             updateComposerScripts: true,
@@ -45,7 +49,7 @@ class InstallConfigurationCollector
             label: 'What is the application name?',
             default: $default,
             required: 'An application name is required.',
-            validate: fn (string $value): ?string => mb_strlen(trim($value)) >= 2
+            validate: fn (string $value): ?string => strlen(trim($value)) >= 2
                 ? null
                 : 'The application name must be at least 2 characters.'
         ));

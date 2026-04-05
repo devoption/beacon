@@ -21,9 +21,12 @@ class InstallCommand extends Command
     {
         intro('Beacon will guide you through the initial production install setup.');
 
+        $configuredApplicationName = $this->laravel->config->get('app.name');
+        $applicationName = is_string($configuredApplicationName) ? $configuredApplicationName : null;
+
         $configuration = $collector->collect(
             basePath: $this->laravel->basePath(),
-            applicationName: $this->laravel->config->get('app.name'),
+            applicationName: $applicationName,
             interactive: $this->input->isInteractive(),
         );
 

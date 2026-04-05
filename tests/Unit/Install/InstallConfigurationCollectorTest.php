@@ -30,6 +30,17 @@ it('falls back to the base path name when no application name is provided', func
     expect($configuration->applicationName)->toBe('acme-platform');
 });
 
+it('falls back to the base path name when the configured application name is blank', function (): void {
+    $collector = new InstallConfigurationCollector;
+
+    $configuration = $collector->defaultConfiguration(
+        basePath: '/srv/apps/acme-platform',
+        applicationName: '   ',
+    );
+
+    expect($configuration->applicationName)->toBe('acme-platform');
+});
+
 it('collects prompt answers into a structured install configuration', function (): void {
     $collector = new class extends InstallConfigurationCollector
     {
