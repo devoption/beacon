@@ -79,6 +79,8 @@ final readonly class HelmChartGenerator
     {
         $normalized = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $configuration->applicationName) ?? '');
         $normalized = trim($normalized, '-');
+        $normalized = substr($normalized, 0, 63);
+        $normalized = trim($normalized, '-');
 
         return $normalized !== '' ? $normalized : 'beacon';
     }

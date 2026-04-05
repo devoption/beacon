@@ -49,6 +49,23 @@ it('renders octane-specific helm values', function (): void {
         ->and($files['values.yaml'])->toContain('port: 8000');
 });
 
+it('truncates long chart names to helm-friendly lengths', function (): void {
+    $generator = new HelmChartGenerator(new SafeFileWriter);
+    $configuration = new InstallConfiguration(
+        applicationName: 'Beacon Demo Platform For Very Long Production Installations Across Multiple Regions',
+        runtime: 'php-fpm',
+        deploymentTarget: 'helm',
+        updateComposerScripts: true,
+    );
+
+    $files = $generator->renderFiles($configuration);
+
+    expect($generator->chartPath('/tmp/app', $configuration))->toBe(
+        '/tmp/app/charts/beacon-demo-platform-for-very-long-production-installations-acr'
+    )
+        ->and($files['Chart.yaml'])->toContain('name: beacon-demo-platform-for-very-long-production-installations-acr');
+});
+
 it('escapes the application name for yaml double quoted strings', function (): void {
     $generator = new HelmChartGenerator(new SafeFileWriter);
     $configuration = new InstallConfiguration(
