@@ -1,0 +1,43 @@
+ARG PHP_VERSION=8.4
+
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock* ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-scripts \
+    --no-progress \
+    --prefer-dist
+
+FROM php:${PHP_VERSION}-fpm-alpine AS beacon
+
+WORKDIR /var/www/html
+
+RUN apk add --no-cache \
+    fcgi \
+    git \
+    icu-data-full \
+    icu-libs \
+    libzip \
+    oniguruma-dev \
+    zip \
+    && docker-php-ext-install \
+        bcmath \
+        opcache \
+        pdo_mysql \
+    && rm -rf /var/cache/apk/*
+
+COPY --from=vendor /app/vendor ./vendor
+COPY . .
+
+RUN cp .env.example .env 2>/dev/null || true \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || true
+
+LABEL org.opencontainers.image.title="{{application_name}}"
+LABEL io.devoption.beacon.runtime="php-fpm"
+
+EXPOSE 9000
+
+CMD ["php-fpm", "-F"]
