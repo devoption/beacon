@@ -1,0 +1,42 @@
+{
+    "name": "devoption/beacon",
+    "description": "Production-ready Docker and Helm support for Laravel applications, with guided installation, Octane integration, and streamlined build/deploy workflows.",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "docker",
+        "helm",
+        "octane",
+        "deployment"
+    ],
+    "homepage": "https://github.com/devoption/beacon",
+    "support": {
+        "issues": "https://github.com/devoption/beacon/issues",
+        "source": "https://github.com/devoption/beacon"
+    },
+    "require": {
+        "php": "^8.2",
+        "illuminate/console": "^10.0|^11.0|^12.0",
+        "illuminate/support": "^10.0|^11.0|^12.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.24",
+        "orchestra/testbench": "^8.0|^9.0|^10.0",
+        "phpunit/phpunit": "^10.5|^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "DevOption\\Beacon\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "DevOption\\Beacon\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
