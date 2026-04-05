@@ -15,12 +15,14 @@ FROM php:${PHP_VERSION}-cli-alpine AS beacon
 WORKDIR /var/www/html
 
 RUN apk add --no-cache \
+    brotli-dev \
     git \
     icu-data-full \
     icu-libs \
     libstdc++ \
     linux-headers \
     oniguruma-dev \
+    openssl-dev \
     $PHPIZE_DEPS \
     && pecl install swoole \
     && docker-php-ext-enable swoole \
