@@ -9,6 +9,7 @@ use DevOption\Beacon\Install\InstallConfigurationCollector;
 use DevOption\Beacon\Octane\OctaneInstallationResult;
 use DevOption\Beacon\Octane\OctaneInstaller;
 use Illuminate\Console\Command;
+use Throwable;
 
 use function Laravel\Prompts\intro;
 use function Laravel\Prompts\outro;
@@ -32,7 +33,19 @@ class InstallCommand extends Command
             interactive: $this->input->isInteractive(),
         );
 
-        $octaneInstallation = $this->ensureOctaneIsAvailable($configuration, $octaneInstaller);
+        try {
+            $octaneInstallation = $this->ensureOctaneIsAvailable($configuration, $octaneInstaller);
+        } catch (Throwable $throwable) {
+            $message = trim($throwable->getMessage());
+
+            $this->components->error(
+                $message !== ''
+                    ? sprintf('Failed to ensure Octane is available: %s', $message)
+                    : 'Failed to ensure Octane is available.'
+            );
+
+            return self::FAILURE;
+        }
 
         $this->displayConfigurationSummary($configuration);
         $this->displayOctaneSummary($octaneInstallation);
