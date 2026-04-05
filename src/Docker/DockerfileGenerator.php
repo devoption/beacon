@@ -21,7 +21,7 @@ final readonly class DockerfileGenerator
     {
         return str_replace(
             '{{application_name}}',
-            $configuration->applicationName,
+            $this->escapeDockerfileDoubleQuotedString($configuration->applicationName),
             $this->stubContentsFor($configuration),
         );
     }
@@ -61,5 +61,15 @@ final readonly class DockerfileGenerator
         }
 
         return $contents;
+    }
+
+    private function escapeDockerfileDoubleQuotedString(string $value): string
+    {
+        return strtr($value, [
+            '\\' => '\\\\',
+            '"' => '\\"',
+            "\r" => '\\r',
+            "\n" => '\\n',
+        ]);
     }
 }

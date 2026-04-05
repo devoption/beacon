@@ -43,6 +43,22 @@ it('renders an octane dockerfile from the stub', function (): void {
         ->and($contents)->toContain('CMD ["php", "artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=8000"]');
 });
 
+it('escapes the application name for dockerfile label values', function (): void {
+    $generator = new DockerfileGenerator(new SafeFileWriter);
+    $configuration = new InstallConfiguration(
+        applicationName: "Beacon \"Demo\" \\\nNext",
+        runtime: 'php-fpm',
+        deploymentTarget: 'docker',
+        updateComposerScripts: true,
+    );
+
+    $contents = $generator->render($configuration);
+
+    expect($contents)->toContain('LABEL org.opencontainers.image.title="')
+        ->and($contents)->toContain('Beacon \\"Demo\\"')
+        ->and($contents)->toContain('\\\\\\nNext"');
+});
+
 it('writes the rendered dockerfile through the safe file writer', function (): void {
     $directory = beaconTestTempDirectory();
     $generator = new DockerfileGenerator(new SafeFileWriter);
