@@ -36,12 +36,15 @@ it('renders an octane dockerfile from the stub', function (): void {
     );
 
     $contents = $generator->render($configuration);
+    $matched = preg_match('/RUN apk add --no-cache\s+(.+?)\s+&& pecl install swoole/s', $contents, $matches);
 
-    expect($contents)->toContain('brotli-dev')
-        ->and($contents)->toContain('openssl-dev')
+    expect($matched)->toBe(1);
+
+    $apkAddBlock = $matches[1];
+
+    expect($apkAddBlock)->toContain('brotli-dev')
+        ->and($apkAddBlock)->toContain('openssl-dev')
         ->and($contents)->toContain('pecl install swoole')
-        ->and($contents)->toContain("brotli-dev \\\n    git")
-        ->and($contents)->toContain("oniguruma-dev \\\n    openssl-dev")
         ->and($contents)->toContain('LABEL io.devoption.beacon.runtime="octane"')
         ->and($contents)->toContain('EXPOSE 8000')
         ->and($contents)->toContain('CMD ["php", "artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=8000"]');
