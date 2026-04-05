@@ -97,13 +97,13 @@ composer test
 
 Repository automation also includes:
 
-- Laravel compatibility CI in [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
-- publish-readiness validation in [`.github/workflows/publish-readiness.yml`](.github/workflows/publish-readiness.yml)
-- automated semantic releases in [`.github/workflows/release.yml`](.github/workflows/release.yml)
+- Laravel compatibility CI in [`.github/workflows/ci.yml`](https://github.com/devoption/beacon/blob/main/.github/workflows/ci.yml)
+- publish-readiness validation in [`.github/workflows/publish-readiness.yml`](https://github.com/devoption/beacon/blob/main/.github/workflows/publish-readiness.yml)
+- automated semantic releases in [`.github/workflows/release.yml`](https://github.com/devoption/beacon/blob/main/.github/workflows/release.yml)
 
 For contributor workflow details, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-For maintainer release and Packagist setup notes, see [docs/RELEASING.md](docs/RELEASING.md).
+For maintainer release and Packagist setup notes, see [docs/RELEASING.md](https://github.com/devoption/beacon/blob/main/docs/RELEASING.md).
 
 ## License
 

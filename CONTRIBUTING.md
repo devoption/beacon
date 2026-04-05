@@ -87,4 +87,4 @@ Out-of-scope examples:
 
 ## Release notes
 
-Maintainers should use [docs/RELEASING.md](docs/RELEASING.md) for release automation and Packagist setup details.
+Maintainers should use [docs/RELEASING.md](https://github.com/devoption/beacon/blob/main/docs/RELEASING.md) for release automation and Packagist setup details.
