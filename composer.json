@@ -5,12 +5,21 @@
     "license": "MIT",
     "keywords": [
         "laravel",
+        "laravel-package",
         "docker",
         "helm",
+        "kubernetes",
         "octane",
         "deployment"
     ],
     "homepage": "https://github.com/devoption/beacon",
+    "authors": [
+        {
+            "name": "DevOption Labs LLC",
+            "homepage": "https://github.com/devoption",
+            "role": "Maintainer"
+        }
+    ],
     "support": {
         "issues": "https://github.com/devoption/beacon/issues",
         "source": "https://github.com/devoption/beacon"
@@ -37,6 +46,17 @@
             "DevOption\\Beacon\\Tests\\": "tests/"
         }
     },
+    "archive": {
+        "exclude": [
+            "/.github",
+            "/.phpunit.cache",
+            "/.gitignore",
+            "/build",
+            "/phpunit.xml.dist",
+            "/tests",
+            "/vendor"
+        ]
+    },
     "extra": {
         "laravel": {
             "providers": [
@@ -51,7 +71,8 @@
         "sort-packages": true
     },
     "scripts": {
-        "test": "vendor/bin/pest"
+        "test": "vendor/bin/pest",
+        "validate-package": "@composer validate --strict --no-check-publish"
     },
     "minimum-stability": "stable",
     "prefer-stable": true
