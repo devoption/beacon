@@ -58,6 +58,7 @@ jobs:
             testbench: '^11.0'
             composer-flags: ''
             experimental: false
+          # Laravel 13 is the current package baseline and requires PHP 8.3+.
           - name: Laravel 13 / PHP 8.4
             php: '8.4'
             laravel: '^13.0'

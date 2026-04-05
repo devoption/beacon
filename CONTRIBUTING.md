@@ -59,9 +59,12 @@ Common commands:
 
 ```bash
 composer test
+composer run test-laravel-13-compat
 composer run validate-package
 composer run validate-package-publish
 ```
+
+`composer run test-laravel-13-compat` runs the Beacon suite against a temporary Laravel 13 / Testbench 11 dependency set so you can verify the current compatibility baseline locally without mutating your working tree.
 
 If your change affects release or packaging behavior, also validate the relevant GitHub workflow inputs locally when practical.
 
