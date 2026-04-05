@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Laravel 11 / PHP 8.3
+            php: '8.3'
+            laravel: '^11.0'
+            testbench: '^9.0'
+            composer-flags: ''
+            experimental: false
+          - name: Laravel 11 / PHP 8.4
+            php: '8.4'
+            laravel: '^11.0'
+            testbench: '^9.0'
+            composer-flags: ''
+            experimental: false
+          - name: Laravel 12 / PHP 8.3
+            php: '8.3'
+            laravel: '^12.0'
+            testbench: '^10.0'
+            composer-flags: ''
+            experimental: false
+          - name: Laravel 12 / PHP 8.4
+            php: '8.4'
+            laravel: '^12.0'
+            testbench: '^10.0'
+            composer-flags: ''
+            experimental: false
+          - name: Laravel 12 / PHP 8.5
+            php: '8.5'
+            laravel: '^12.0'
+            testbench: '^10.0'
+            composer-flags: ''
+            experimental: false
+          - name: Laravel 13 / PHP 8.3
+            php: '8.3'
+            laravel: '^13.0'
+            testbench: '^11.0'
+            composer-flags: ''
+            experimental: false
+          - name: Laravel 13 / PHP 8.4
+            php: '8.4'
+            laravel: '^13.0'
+            testbench: '^11.0'
+            composer-flags: ''
+            experimental: false
+          - name: Laravel 13 / PHP 8.5
+            php: '8.5'
+            laravel: '^13.0'
+            testbench: '^11.0'
+            composer-flags: ''
+            experimental: false
+          - name: Laravel 13 / PHP nightly
+            php: nightly
+            laravel: '^13.0'
+            testbench: '^11.0'
+            composer-flags: '--ignore-platform-req=php'
+            experimental: true
+          # Laravel does not publish a dedicated "nightly" package line.
+          # The closest maintainable forward-compatibility check is the dev
+          # branch of laravel/framework plus the matching Testbench dev branch.
+          - name: Laravel dev / PHP 8.5
+            php: '8.5'
+            laravel: '13.x-dev@dev'
+            testbench: '11.x-dev@dev'
+            composer-flags: ''
+            experimental: true
+          - name: Laravel dev / PHP nightly
+            php: nightly
+            laravel: '13.x-dev@dev'
+            testbench: '11.x-dev@dev'
+            composer-flags: '--ignore-platform-req=php'
+            experimental: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        id: setup-php
+        uses: shivammathur/setup-php@v2
+        continue-on-error: ${{ matrix.experimental }}
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate package metadata
+        if: ${{ steps.setup-php.outcome == 'success' }}
+        continue-on-error: ${{ matrix.experimental }}
+        run: composer validate --strict --no-check-publish
+
+      - name: Cache Composer downloads
+        if: ${{ steps.setup-php.outcome == 'success' }}
+        continue-on-error: ${{ matrix.experimental }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ runner.os }}-${{ matrix.php }}-${{ matrix.laravel }}-${{ matrix.testbench }}
+          restore-keys: |
+            composer-${{ runner.os }}-${{ matrix.php }}-
+            composer-${{ runner.os }}-
+
+      - name: Install matrix dependencies
+        id: install
+        if: ${{ steps.setup-php.outcome == 'success' }}
+        continue-on-error: ${{ matrix.experimental }}
+        run: |
+          extra_composer_flags=()
+
+          if [[ -n "${{ matrix.composer-flags }}" ]]; then
+            extra_composer_flags+=("${{ matrix.composer-flags }}")
+          fi
+
+          if [[ "${{ matrix.laravel }}" == *"dev"* ]]; then
+            composer update \
+              --no-interaction \
+              --no-progress \
+              --prefer-dist \
+              "${extra_composer_flags[@]}" \
+              --with "laravel/framework:${{ matrix.laravel }}" \
+              --with "orchestra/testbench:${{ matrix.testbench }}"
+          else
+            composer update \
+              --no-interaction \
+              --no-progress \
+              --prefer-dist \
+              "${extra_composer_flags[@]}" \
+              --with "illuminate/console:${{ matrix.laravel }}" \
+              --with "illuminate/process:${{ matrix.laravel }}" \
+              --with "illuminate/support:${{ matrix.laravel }}" \
+              --with "orchestra/testbench:${{ matrix.testbench }}"
+          fi
+
+      - name: Run test suite
+        if: ${{ steps.install.outcome == 'success' }}
+        continue-on-error: ${{ matrix.experimental }}
+        run: composer test

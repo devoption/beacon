@@ -20,7 +20,7 @@ it('detects when octane is already declared in the application manifest', functi
     Process::fake()->preventStrayProcesses();
 
     try {
-        $result = new OctaneInstaller()->ensureInstalled($directory);
+        $result = (new OctaneInstaller())->ensureInstalled($directory);
 
         expect($result->status)->toBe(OctaneInstallationStatus::AlreadyInstalled)
             ->and($result->summary())->toBe('Already available');
@@ -46,7 +46,7 @@ it('installs octane with composer when it is missing', function (): void {
     ]);
 
     try {
-        $result = new OctaneInstaller()->ensureInstalled($directory);
+        $result = (new OctaneInstaller())->ensureInstalled($directory);
 
         expect($result->status)->toBe(OctaneInstallationStatus::Installed)
             ->and($result->summary())->toBe('Installed now');
@@ -79,7 +79,7 @@ it('surfaces composer install failures for octane', function (): void {
     ]);
 
     try {
-        expect(fn (): mixed => new OctaneInstaller()->ensureInstalled($directory))
+        expect(fn (): mixed => (new OctaneInstaller())->ensureInstalled($directory))
             ->toThrow(RuntimeException::class, 'Unable to install Laravel Octane. Composer require failed.');
     } finally {
         removeBeaconTestDirectory($directory);
