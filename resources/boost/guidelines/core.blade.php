@@ -1,5 +1,5 @@
 <laravel-boost-guidelines>
-=== beacon rules ===
+# Beacon rules
 
 ## Beacon package focus
 
