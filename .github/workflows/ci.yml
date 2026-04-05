@@ -85,6 +85,12 @@ jobs:
             testbench: '11.x-dev@dev'
             composer-flags: ''
             experimental: true
+          - name: Laravel dev / PHP nightly
+            php: nightly
+            laravel: '13.x-dev@dev'
+            testbench: '11.x-dev@dev'
+            composer-flags: '--ignore-platform-req=php'
+            experimental: true
 
     steps:
       - name: Checkout repository

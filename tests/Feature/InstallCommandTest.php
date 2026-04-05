@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use DevOption\Beacon\BeaconServiceProvider;
+use DevOption\Beacon\Install\InstallConfiguration;
+use DevOption\Beacon\Install\InstallConfigurationCollector;
+use Illuminate\Foundation\Application;
 use Illuminate\Testing\PendingCommand;
 use Illuminate\Support\Facades\Process;
 
@@ -66,11 +69,38 @@ function expectBeaconInstallPrompts(
         );
 }
 
+function fakeInstallConfigurationCollector(
+    \Illuminate\Contracts\Container\Container $app,
+    InstallConfiguration $configuration,
+): void {
+    $app->instance(InstallConfigurationCollector::class, new class($configuration) extends InstallConfigurationCollector
+    {
+        public function __construct(private readonly InstallConfiguration $configuration) {}
+
+        public function collect(
+            string $basePath,
+            ?string $applicationName = null,
+            bool $interactive = true,
+        ): InstallConfiguration {
+            return $this->configuration;
+        }
+    });
+}
+
+function supportsPendingPromptExpectations(): bool
+{
+    return version_compare(Application::VERSION, '12.0.0', '>=');
+}
+
 it('boots the package service provider in testbench', function (): void {
     expect($this->app->getProvider(BeaconServiceProvider::class))->not->toBeNull();
 });
 
 it('guides the user through the install skeleton with prompts', function (): void {
+    if (! supportsPendingPromptExpectations()) {
+        $this->markTestSkipped('Pending command prompt expectations are not reliable on Laravel 11.');
+    }
+
     $directory = beaconTestApplicationDirectory();
     $originalBasePath = $this->app->basePath();
 
@@ -122,16 +152,80 @@ it('guides the user through the install skeleton with prompts', function (): voi
     }
 });
 
+it('runs the install workflow from collected configuration', function (): void {
+    $directory = beaconTestApplicationDirectory();
+    $originalBasePath = $this->app->basePath();
+
+    $this->app->setBasePath($directory);
+
+    fakeInstallConfigurationCollector($this->app, new InstallConfiguration(
+        applicationName: 'Beacon Demo',
+        runtime: 'octane',
+        deploymentTarget: 'docker-and-helm',
+        updateComposerScripts: true,
+    ));
+    fakeOctaneComposerRequire($directory);
+
+    try {
+        $this->artisan('beacon:install', ['--no-interaction' => true])
+            ->expectsOutputToContain('Install skeleton summary')
+            ->expectsOutputToContain('Beacon Demo')
+            ->expectsOutputToContain('Laravel Octane')
+            ->expectsOutputToContain('Dockerfile and Helm chart')
+            ->expectsOutputToContain('Plan to update')
+            ->expectsOutputToContain('Octane integration')
+            ->expectsOutputToContain('Installed now')
+            ->expectsOutputToContain('Generated artifacts')
+            ->expectsOutputToContain('Beacon installation completed.')
+            ->assertSuccessful();
+
+        Process::assertRanTimes(fn ($process) => $process->path === $directory
+            && $process->command === [
+                'composer',
+                'require',
+                'laravel/octane',
+                '--no-interaction',
+                '--no-progress',
+            ], 1);
+
+        $manifest = json_decode((string) file_get_contents($directory.'/composer.json'), true, 512, JSON_THROW_ON_ERROR);
+
+        expect($directory.'/Dockerfile')->toBeFile()
+            ->and(file_get_contents($directory.'/Dockerfile'))->toContain('LABEL io.devoption.beacon.runtime="octane"')
+            ->and($directory.'/charts/beacon-demo/Chart.yaml')->toBeFile()
+            ->and(file_get_contents($directory.'/charts/beacon-demo/values.yaml'))->toContain('runtime: octane')
+            ->and($manifest['require'])->toHaveKey('laravel/octane')
+            ->and($manifest['scripts'])->toMatchArray([
+                'test' => '@php artisan test',
+                'beacon:build' => 'docker build --file Dockerfile --tag beacon-demo:latest .',
+                'beacon:deploy' => 'helm upgrade --install beacon-demo ./charts/beacon-demo --namespace default --create-namespace',
+            ])
+            ->and($manifest['scripts-descriptions'])->toMatchArray([
+                'beacon:build' => 'Build the Beacon production Docker image.',
+                'beacon:deploy' => 'Deploy the Beacon Helm release.',
+            ]);
+    } finally {
+        $this->app->setBasePath($originalBasePath);
+        removeBeaconTestDirectory($directory);
+    }
+});
+
 it('is idempotent when the installer is run twice with the same answers', function (): void {
     $directory = beaconTestApplicationDirectory();
     $originalBasePath = $this->app->basePath();
 
     $this->app->setBasePath($directory);
 
+    fakeInstallConfigurationCollector($this->app, new InstallConfiguration(
+        applicationName: 'Beacon Demo',
+        runtime: 'octane',
+        deploymentTarget: 'docker-and-helm',
+        updateComposerScripts: true,
+    ));
     fakeOctaneComposerRequire($directory);
 
     $runInstaller = function (): void {
-        expectBeaconInstallPrompts($this->artisan('beacon:install'))->assertSuccessful();
+        $this->artisan('beacon:install', ['--no-interaction' => true])->assertSuccessful();
     };
 
     try {
@@ -141,7 +235,7 @@ it('is idempotent when the installer is run twice with the same answers', functi
         $firstChart = file_get_contents($directory.'/charts/beacon-demo/values.yaml');
         $firstManifest = file_get_contents($directory.'/composer.json');
 
-        expectBeaconInstallPrompts($this->artisan('beacon:install'))
+        $this->artisan('beacon:install', ['--no-interaction' => true])
             ->expectsOutputToContain('Already available')
             ->expectsOutputToContain('Unchanged')
             ->assertSuccessful();
@@ -169,11 +263,14 @@ it('fails gracefully when octane installation cannot be completed', function ():
         '*' => Process::result('', 'Composer require failed.', 1),
     ]);
 
-    expectBeaconInstallPrompts(
-        $this->artisan('beacon:install'),
+    fakeInstallConfigurationCollector($this->app, new InstallConfiguration(
+        applicationName: 'Beacon Demo',
+        runtime: 'octane',
         deploymentTarget: 'docker',
         updateComposerScripts: false,
-    )
+    ));
+
+    $this->artisan('beacon:install', ['--no-interaction' => true])
         ->expectsOutputToContain('Beacon installation failed: Unable to install Laravel Octane. Composer require failed.')
         ->assertExitCode(1);
 });
