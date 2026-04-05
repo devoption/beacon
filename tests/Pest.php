@@ -34,3 +34,33 @@ function removeBeaconTestDirectory(string $directory): void
 
     rmdir($directory);
 }
+
+/**
+ * @param  array<string, mixed>  $manifest
+ */
+function beaconTestApplicationDirectory(array $manifest = []): string
+{
+    $directory = beaconTestTempDirectory();
+
+    $defaultManifest = [
+        'name' => 'acme/app',
+        'require' => [
+            'php' => '^8.3',
+        ],
+        'scripts' => [
+            'test' => '@php artisan test',
+        ],
+    ];
+
+    $composerJsonPath = $directory.'/composer.json';
+    $composerJson = json_encode(
+        array_replace_recursive($defaultManifest, $manifest),
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+    ).PHP_EOL;
+
+    if (file_put_contents($composerJsonPath, $composerJson) === false) {
+        throw new RuntimeException(sprintf('Unable to write composer manifest [%s].', $composerJsonPath));
+    }
+
+    return $directory;
+}
