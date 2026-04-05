@@ -54,6 +54,7 @@
             "/.gitignore",
             "/.releaserc.json",
             "/build",
+            "/docs/RELEASING.md",
             "/node_modules",
             "/package-lock.json",
             "/package.json",
