@@ -77,7 +77,8 @@
     },
     "scripts": {
         "test": "vendor/bin/pest",
-        "validate-package": "@composer validate --strict --no-check-publish"
+        "validate-package": "@composer validate --strict --no-check-publish",
+        "validate-package-publish": "@composer validate --strict"
     },
     "minimum-stability": "stable",
     "prefer-stable": true

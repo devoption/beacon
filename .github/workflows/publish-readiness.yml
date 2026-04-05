@@ -30,7 +30,10 @@ jobs:
       # dist archive that Packagist consumers receive, and verifies that the
       # archive includes Beacon runtime assets while excluding dev-only files.
       - name: Validate Composer package metadata
-        run: composer validate --strict
+        run: composer run validate-package-publish
+
+      - name: Create build directory
+        run: mkdir -p build
 
       - name: Build Composer dist archive
         run: composer archive --format=zip --file=build/beacon-publish-readiness
