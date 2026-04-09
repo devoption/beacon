@@ -136,6 +136,9 @@ it('guides the user through the install skeleton with prompts', function (): voi
             ->and(file_get_contents($directory.'/Dockerfile'))->toContain('LABEL io.devoption.beacon.runtime="octane"')
             ->and($directory.'/charts/beacon-demo/Chart.yaml')->toBeFile()
             ->and(file_get_contents($directory.'/charts/beacon-demo/values.yaml'))->toContain('runtime: octane')
+            ->and($directory.'/charts/beacon-demo/values.local.yaml')->toBeFile()
+            ->and($directory.'/charts/beacon-demo/values.staging.yaml')->toBeFile()
+            ->and($directory.'/charts/beacon-demo/values.production.yaml')->toBeFile()
             ->and($manifest['require'])->toHaveKey('laravel/octane')
             ->and($manifest['scripts'])->toMatchArray([
                 'test' => '@php artisan test',
@@ -194,6 +197,9 @@ it('runs the install workflow from collected configuration', function (): void {
             ->and(file_get_contents($directory.'/Dockerfile'))->toContain('LABEL io.devoption.beacon.runtime="octane"')
             ->and($directory.'/charts/beacon-demo/Chart.yaml')->toBeFile()
             ->and(file_get_contents($directory.'/charts/beacon-demo/values.yaml'))->toContain('runtime: octane')
+            ->and($directory.'/charts/beacon-demo/values.local.yaml')->toBeFile()
+            ->and($directory.'/charts/beacon-demo/values.staging.yaml')->toBeFile()
+            ->and($directory.'/charts/beacon-demo/values.production.yaml')->toBeFile()
             ->and($manifest['require'])->toHaveKey('laravel/octane')
             ->and($manifest['scripts'])->toMatchArray([
                 'test' => '@php artisan test',

@@ -22,6 +22,9 @@ it('renders a helm chart scaffold for the php-fpm runtime', function (): void {
     expect(array_keys($files))->toBe([
         'Chart.yaml',
         'values.yaml',
+        'values.local.yaml',
+        'values.staging.yaml',
+        'values.production.yaml',
         'templates/_helpers.tpl',
         'templates/deployment.yaml',
         'templates/service.yaml',
@@ -31,6 +34,9 @@ it('renders a helm chart scaffold for the php-fpm runtime', function (): void {
         ->and($files['Chart.yaml'])->toContain('Beacon Demo')
         ->and($files['values.yaml'])->toContain('runtime: php-fpm')
         ->and($files['values.yaml'])->toContain('port: 9000')
+        ->and($files['values.local.yaml'])->toContain('APP_ENV: local')
+        ->and($files['values.staging.yaml'])->toContain('APP_ENV: staging')
+        ->and($files['values.production.yaml'])->toContain('APP_ENV: production')
         ->and($files['templates/deployment.yaml'])->toContain('containerPort: {{ .Values.service.port }}');
 });
 
@@ -97,7 +103,10 @@ it('writes the helm chart scaffold through the safe file writer', function (): v
         expect($result->chartPath)->toBe($directory.'/charts/beacon-demo')
             ->and($result->files['Chart.yaml']->status)->toBe(FileWriteStatus::Created)
             ->and($directory.'/charts/beacon-demo/Chart.yaml')->toBeFile()
-            ->and(file_get_contents($directory.'/charts/beacon-demo/values.yaml'))->toContain('port: 9000');
+            ->and(file_get_contents($directory.'/charts/beacon-demo/values.yaml'))->toContain('port: 9000')
+            ->and($directory.'/charts/beacon-demo/values.local.yaml')->toBeFile()
+            ->and($directory.'/charts/beacon-demo/values.staging.yaml')->toBeFile()
+            ->and($directory.'/charts/beacon-demo/values.production.yaml')->toBeFile();
     } finally {
         removeBeaconTestDirectory($directory);
     }

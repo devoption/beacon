@@ -17,6 +17,9 @@ final readonly class HelmChartGenerator
     private const STUBS = [
         'Chart.yaml' => 'Chart.yaml.stub',
         'values.yaml' => 'values.yaml.stub',
+        'values.local.yaml' => 'values.local.yaml.stub',
+        'values.staging.yaml' => 'values.staging.yaml.stub',
+        'values.production.yaml' => 'values.production.yaml.stub',
         'templates/_helpers.tpl' => 'templates/_helpers.tpl.stub',
         'templates/deployment.yaml' => 'templates/deployment.yaml.stub',
         'templates/service.yaml' => 'templates/service.yaml.stub',

@@ -1,0 +1,8 @@
+replicaCount: 2
+
+image:
+  tag: staging
+
+env:
+  APP_ENV: staging
+  APP_DEBUG: "false"
