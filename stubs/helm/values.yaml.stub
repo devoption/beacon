@@ -12,8 +12,9 @@ service:
   port: {{service_port}}
 
 ingress:
-  enabled: false
-  className: ""
+  provider: {{ingress_provider}}
+  enabled: {{ingress_enabled}}
+  className: "{{ingress_class_name}}"
   annotations: {}
   hosts:
     - host: {{chart_name}}.example.com

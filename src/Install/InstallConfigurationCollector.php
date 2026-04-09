@@ -10,12 +10,21 @@ use function Laravel\Prompts\text;
 
 class InstallConfigurationCollector
 {
+    public function __construct(
+        private readonly ?IngressProviderRecommendationRepository $ingressProviderRecommendationRepository = null,
+    ) {
+    }
+
     public function collect(
         string $basePath,
         ?string $applicationName = null,
         bool $interactive = true,
     ): InstallConfiguration {
-        $defaults = $this->defaultConfiguration($basePath, $applicationName);
+        $defaults = $this->defaultConfiguration(
+            $basePath,
+            $applicationName,
+            $this->ingressProviderRecommendationRepository?->recommend($basePath),
+        );
 
         if (! $interactive) {
             return $defaults;
@@ -24,6 +33,9 @@ class InstallConfigurationCollector
         $applicationName = $this->askApplicationName($defaults->applicationName);
         $runtime = $this->askRuntime($defaults->runtime);
         $deploymentTarget = $this->askDeploymentTarget($defaults->deploymentTarget);
+        $ingressProvider = $this->usesHelm($deploymentTarget)
+            ? $this->askIngressProvider($defaults->ingressProvider, $this->ingressProviderRecommendationRepository?->recommend($basePath))
+            : 'none';
         $updateComposerScripts = $this->askUpdateComposerScripts($defaults->updateComposerScripts);
         $secretHandling = $this->usesHelm($deploymentTarget)
             ? $this->askSecretHandling($defaults->secretHandling)
@@ -39,10 +51,15 @@ class InstallConfigurationCollector
             updateComposerScripts: $updateComposerScripts,
             secretHandling: $secretHandling,
             existingSecretName: $existingSecretName,
+            ingressProvider: $ingressProvider,
         );
     }
 
-    public function defaultConfiguration(string $basePath, ?string $applicationName = null): InstallConfiguration
+    public function defaultConfiguration(
+        string $basePath,
+        ?string $applicationName = null,
+        ?IngressProviderRecommendation $ingressProviderRecommendation = null,
+    ): InstallConfiguration
     {
         $normalizedApplicationName = $this->normalizeApplicationName($applicationName ?? '');
 
@@ -55,6 +72,7 @@ class InstallConfigurationCollector
             updateComposerScripts: true,
             secretHandling: 'managed-secret',
             existingSecretName: null,
+            ingressProvider: $ingressProviderRecommendation?->provider ?? 'none',
         );
     }
 
@@ -100,6 +118,31 @@ class InstallConfigurationCollector
             label: 'Should Beacon plan to update Composer scripts during installation?',
             default: $default
         );
+    }
+
+    protected function askIngressProvider(
+        string $default,
+        ?IngressProviderRecommendation $recommendation = null,
+    ): string {
+        $options = InstallConfiguration::INGRESS_PROVIDER_OPTIONS;
+
+        if ($recommendation !== null && array_key_exists($recommendation->provider, $options)) {
+            $options[$recommendation->provider] = sprintf(
+                '%s (Recommended for %s)',
+                $options[$recommendation->provider],
+                $recommendation->clusterContext,
+            );
+            $default = $recommendation->provider;
+        }
+
+        /** @var string $ingressProvider */
+        $ingressProvider = select(
+            label: 'Which ingress provider should Beacon prepare for?',
+            options: $options,
+            default: $default
+        );
+
+        return $ingressProvider;
     }
 
     protected function askSecretHandling(string $default): string

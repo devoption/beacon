@@ -48,6 +48,7 @@ Beacon currently prompts for:
 - application name
 - runtime: `php-fpm` or `octane`
 - deployment scaffolding: `docker`, `helm`, or `docker-and-helm`
+- ingress provider: disabled, Ingress NGINX, or Traefik
 - secret handling: Beacon-managed Helm secret or an existing Kubernetes secret
 - whether Beacon should update Composer scripts
 
@@ -88,7 +89,7 @@ Example managed scripts:
 }
 ```
 
-Beacon generates `values.yaml` as the shared chart values file and also creates environment-specific overlays for `local`, `staging`, and `production`. The deploy command always applies `values.yaml` first, then layers the selected environment values file on top when it runs Helm.
+Beacon generates `values.yaml` as the shared chart values file and also creates environment-specific overlays for `local`, `staging`, and `production`. The selected ingress strategy is persisted there so the generated chart knows whether ingress is disabled and which class name Beacon should prepare for. The deploy command always applies `values.yaml` first, then layers the selected environment values file on top when it runs Helm.
 
 Sensitive application values are kept out of the committed environment overlays. Beacon now:
 

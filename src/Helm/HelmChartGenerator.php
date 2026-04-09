@@ -47,6 +47,9 @@ final readonly class HelmChartGenerator
             '{{service_port}}' => (string) $this->servicePort($configuration),
             '{{create_managed_secret}}' => $configuration->secretHandling === 'managed-secret' ? 'true' : 'false',
             '{{existing_secret_name}}' => $this->escapeYamlDoubleQuotedString($configuration->existingSecretName ?? ''),
+            '{{ingress_provider}}' => $configuration->ingressProvider,
+            '{{ingress_enabled}}' => $configuration->ingressEnabled() ? 'true' : 'false',
+            '{{ingress_class_name}}' => $this->escapeYamlDoubleQuotedString($configuration->ingressClassName()),
         ];
 
         $files = [];
