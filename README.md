@@ -48,6 +48,7 @@ Beacon currently prompts for:
 - application name
 - runtime: `php-fpm` or `octane`
 - deployment scaffolding: `docker`, `helm`, or `docker-and-helm`
+- secret handling: Beacon-managed Helm secret or an existing Kubernetes secret
 - whether Beacon should update Composer scripts
 
 When the Octane runtime is selected, Beacon checks the target application's `composer.json` and installs `laravel/octane` if it is not already present.
@@ -60,10 +61,14 @@ Depending on the options you choose, Beacon generates:
 - `charts/<application-slug>/Chart.yaml`
 - `charts/<application-slug>/values.yaml`
 - `charts/<application-slug>/values.local.yaml`
+- `charts/<application-slug>/values.local.secrets.example.yaml`
 - `charts/<application-slug>/values.staging.yaml`
+- `charts/<application-slug>/values.staging.secrets.example.yaml`
 - `charts/<application-slug>/values.production.yaml`
+- `charts/<application-slug>/values.production.secrets.example.yaml`
 - `charts/<application-slug>/templates/_helpers.tpl`
 - `charts/<application-slug>/templates/deployment.yaml`
+- `charts/<application-slug>/templates/secret.yaml`
 - `charts/<application-slug>/templates/service.yaml`
 - `charts/<application-slug>/templates/ingress.yaml`
 
@@ -83,7 +88,16 @@ Example managed scripts:
 }
 ```
 
-Beacon generates `values.yaml` as the default chart values file and also creates environment-specific overlays for `local`, `staging`, and `production`. The deploy command always applies `values.yaml` first, then layers the selected environment values file on top when it runs Helm.
+Beacon generates `values.yaml` as the shared chart values file and also creates environment-specific overlays for `local`, `staging`, and `production`. The deploy command always applies `values.yaml` first, then layers the selected environment values file on top when it runs Helm.
+
+Sensitive application values are kept out of the committed environment overlays. Beacon now:
+
+- keeps non-sensitive settings in the regular `values*.yaml` files
+- generates `values.<environment>.secrets.example.yaml` templates to show the expected secret structure
+- adds `/charts/*/values.*.secrets.yaml` to the Laravel app `.gitignore`
+- automatically includes `values.<environment>.secrets.yaml` during `beacon:deploy` when that ignored file exists
+
+If you choose the existing Kubernetes secret mode during installation, Beacon configures the chart to reference that external secret instead of creating its own Secret manifest.
 
 ## Rerunning the installer
 

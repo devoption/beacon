@@ -66,6 +66,15 @@ class InstallCommand extends Command
         $this->components->twoColumnDetail('Application', $configuration->applicationName);
         $this->components->twoColumnDetail('Runtime', $configuration->runtimeLabel());
         $this->components->twoColumnDetail('Scaffolding', $configuration->deploymentTargetLabel());
+
+        if ($configuration->usesHelm()) {
+            $this->components->twoColumnDetail('Secrets', $configuration->secretHandlingLabel());
+
+            if ($configuration->existingSecretName !== null) {
+                $this->components->twoColumnDetail('Secret name', $configuration->existingSecretName);
+            }
+        }
+
         $this->components->twoColumnDetail(
             'Composer scripts',
             $configuration->updateComposerScripts ? 'Plan to update' : 'Leave unchanged'
@@ -98,6 +107,13 @@ class InstallCommand extends Command
             'Composer manifest',
             $result->composerManifest !== null
                 ? $this->formatFileWriteResult($result->composerManifest)
+                : 'Left unchanged'
+        );
+
+        $this->components->twoColumnDetail(
+            '.gitignore',
+            $result->gitignore !== null
+                ? $this->formatFileWriteResult($result->gitignore)
                 : 'Left unchanged'
         );
     }

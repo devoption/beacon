@@ -67,6 +67,7 @@ class DeployCommand extends Command
                 context: $context,
                 sharedValuesPath: $this->sharedValuesPath($chartPath),
                 environmentValuesPath: $this->environmentValuesPath($chartPath, $environmentProfiles, $environment),
+                secretValuesPath: $this->secretValuesPath($chartAbsolutePath, $chartPath, $environmentProfiles, $environment),
             );
         } catch (Throwable $throwable) {
             $message = trim($throwable->getMessage());
@@ -267,6 +268,21 @@ class DeployCommand extends Command
     private function sharedValuesPath(string $chartPath): string
     {
         return $this->joinHelmPath($chartPath, 'values.yaml');
+    }
+
+    private function secretValuesPath(
+        string $chartAbsolutePath,
+        string $chartPath,
+        DeploymentEnvironmentProfiles $profiles,
+        string $environment,
+    ): ?string {
+        $absolutePath = $profiles->secretOverlayAbsolutePath($chartAbsolutePath, $environment);
+
+        if (! is_file($absolutePath)) {
+            return null;
+        }
+
+        return $this->joinHelmPath($chartPath, $profiles->secretOverlayRelativePath($environment));
     }
 
     private function joinHelmPath(string $basePath, string $relativePath): string

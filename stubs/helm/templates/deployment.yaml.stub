@@ -24,11 +24,18 @@ spec:
             - name: app
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+          {{- if .Values.env }}
           env:
             {{- range $name, $value := .Values.env }}
             - name: {{ $name }}
               value: {{ $value | quote }}
             {{- end }}
+          {{- end }}
+          {{- if or .Values.secret.existingSecretName (and .Values.secret.create .Values.secret.env) }}
+          envFrom:
+            - secretRef:
+                name: {{ default (include "{{chart_name}}.secretName" .) .Values.secret.existingSecretName }}
+          {{- end }}
           livenessProbe:
             tcpSocket:
               port: app

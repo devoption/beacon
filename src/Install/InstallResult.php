@@ -15,6 +15,7 @@ final readonly class InstallResult
         public ?FileWriteResult $dockerfile,
         public ?HelmChartWriteResult $helmChart,
         public ?FileWriteResult $composerManifest,
+        public ?FileWriteResult $gitignore,
     ) {
     }
 }

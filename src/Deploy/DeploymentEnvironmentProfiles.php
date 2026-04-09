@@ -52,6 +52,25 @@ final readonly class DeploymentEnvironmentProfiles
         return rtrim($chartAbsolutePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$this->overlayRelativePath($environment);
     }
 
+    public function secretOverlayRelativePath(string $environment): string
+    {
+        $this->guardEnvironment($environment);
+
+        return sprintf('values.%s.secrets.yaml', $environment);
+    }
+
+    public function secretExampleRelativePath(string $environment): string
+    {
+        $this->guardEnvironment($environment);
+
+        return sprintf('values.%s.secrets.example.yaml', $environment);
+    }
+
+    public function secretOverlayAbsolutePath(string $chartAbsolutePath, string $environment): string
+    {
+        return rtrim($chartAbsolutePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$this->secretOverlayRelativePath($environment);
+    }
+
     private function guardEnvironment(string $environment): void
     {
         if (! in_array($environment, $this->names, true)) {

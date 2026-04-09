@@ -18,10 +18,14 @@ final readonly class HelmChartGenerator
         'Chart.yaml' => 'Chart.yaml.stub',
         'values.yaml' => 'values.yaml.stub',
         'values.local.yaml' => 'values.local.yaml.stub',
+        'values.local.secrets.example.yaml' => 'values.local.secrets.example.yaml.stub',
         'values.staging.yaml' => 'values.staging.yaml.stub',
+        'values.staging.secrets.example.yaml' => 'values.staging.secrets.example.yaml.stub',
         'values.production.yaml' => 'values.production.yaml.stub',
+        'values.production.secrets.example.yaml' => 'values.production.secrets.example.yaml.stub',
         'templates/_helpers.tpl' => 'templates/_helpers.tpl.stub',
         'templates/deployment.yaml' => 'templates/deployment.yaml.stub',
+        'templates/secret.yaml' => 'templates/secret.yaml.stub',
         'templates/service.yaml' => 'templates/service.yaml.stub',
         'templates/ingress.yaml' => 'templates/ingress.yaml.stub',
     ];
@@ -41,6 +45,8 @@ final readonly class HelmChartGenerator
             '{{chart_name}}' => $this->chartName($configuration),
             '{{runtime}}' => $configuration->runtime,
             '{{service_port}}' => (string) $this->servicePort($configuration),
+            '{{create_managed_secret}}' => $configuration->secretHandling === 'managed-secret' ? 'true' : 'false',
+            '{{existing_secret_name}}' => $this->escapeYamlDoubleQuotedString($configuration->existingSecretName ?? ''),
         ];
 
         $files = [];
