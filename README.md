@@ -74,7 +74,7 @@ Example managed scripts:
 {
   "scripts": {
     "beacon:build": "docker build --file Dockerfile --tag my-app:latest .",
-    "beacon:deploy": "helm upgrade --install my-app ./charts/my-app --namespace default --create-namespace"
+    "beacon:deploy": "@php artisan beacon:deploy"
   }
 }
 ```

@@ -75,10 +75,7 @@ final readonly class ComposerScriptsUpdater
         ];
 
         if ($configuration->deploymentTarget !== 'docker') {
-            $scripts['beacon:deploy'] = sprintf(
-                'helm upgrade --install %1$s ./charts/%1$s --namespace default --create-namespace',
-                $slug
-            );
+            $scripts['beacon:deploy'] = '@php artisan beacon:deploy';
         }
 
         return $scripts;
