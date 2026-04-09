@@ -42,6 +42,7 @@ function expectBeaconInstallPrompts(
     string $runtime = 'octane',
     string $deploymentTarget = 'docker-and-helm',
     bool $updateComposerScripts = true,
+    string $secretHandling = 'managed-secret',
 ): PendingCommand {
     return $command
         ->expectsPromptsIntro('Beacon will guide you through the initial production install setup.')
@@ -66,6 +67,14 @@ function expectBeaconInstallPrompts(
         ->expectsConfirmation(
             'Should Beacon plan to update Composer scripts during installation?',
             $updateComposerScripts ? 'yes' : 'no'
+        )
+        ->expectsChoice(
+            'How should Beacon handle sensitive application environment values?',
+            $secretHandling,
+            [
+                'managed-secret' => 'Beacon-managed Helm secret',
+                'existing-secret' => 'Existing Kubernetes secret',
+            ]
         );
 }
 
@@ -114,6 +123,7 @@ it('guides the user through the install skeleton with prompts', function (): voi
             ->expectsOutputToContain('Beacon Demo')
             ->expectsOutputToContain('Laravel Octane')
             ->expectsOutputToContain('Dockerfile and Helm chart')
+            ->expectsOutputToContain('Beacon-managed Helm secret')
             ->expectsOutputToContain('Plan to update')
             ->expectsOutputToContain('Octane integration')
             ->expectsOutputToContain('Installed now')
@@ -136,9 +146,12 @@ it('guides the user through the install skeleton with prompts', function (): voi
             ->and(file_get_contents($directory.'/Dockerfile'))->toContain('LABEL io.devoption.beacon.runtime="octane"')
             ->and($directory.'/charts/beacon-demo/Chart.yaml')->toBeFile()
             ->and(file_get_contents($directory.'/charts/beacon-demo/values.yaml'))->toContain('runtime: octane')
+            ->and(file_get_contents($directory.'/charts/beacon-demo/values.yaml'))->toContain('create: true')
             ->and($directory.'/charts/beacon-demo/values.local.yaml')->toBeFile()
+            ->and($directory.'/charts/beacon-demo/values.local.secrets.example.yaml')->toBeFile()
             ->and($directory.'/charts/beacon-demo/values.staging.yaml')->toBeFile()
             ->and($directory.'/charts/beacon-demo/values.production.yaml')->toBeFile()
+            ->and(file_get_contents($directory.'/.gitignore'))->toContain('/charts/*/values.*.secrets.yaml')
             ->and($manifest['require'])->toHaveKey('laravel/octane')
             ->and($manifest['scripts'])->toMatchArray([
                 'test' => '@php artisan test',
@@ -166,6 +179,8 @@ it('runs the install workflow from collected configuration', function (): void {
         runtime: 'octane',
         deploymentTarget: 'docker-and-helm',
         updateComposerScripts: true,
+        secretHandling: 'managed-secret',
+        existingSecretName: null,
     ));
     fakeOctaneComposerRequire($directory);
 
@@ -175,6 +190,7 @@ it('runs the install workflow from collected configuration', function (): void {
             ->expectsOutputToContain('Beacon Demo')
             ->expectsOutputToContain('Laravel Octane')
             ->expectsOutputToContain('Dockerfile and Helm chart')
+            ->expectsOutputToContain('Beacon-managed Helm secret')
             ->expectsOutputToContain('Plan to update')
             ->expectsOutputToContain('Octane integration')
             ->expectsOutputToContain('Installed now')
@@ -197,9 +213,12 @@ it('runs the install workflow from collected configuration', function (): void {
             ->and(file_get_contents($directory.'/Dockerfile'))->toContain('LABEL io.devoption.beacon.runtime="octane"')
             ->and($directory.'/charts/beacon-demo/Chart.yaml')->toBeFile()
             ->and(file_get_contents($directory.'/charts/beacon-demo/values.yaml'))->toContain('runtime: octane')
+            ->and(file_get_contents($directory.'/charts/beacon-demo/values.yaml'))->toContain('create: true')
             ->and($directory.'/charts/beacon-demo/values.local.yaml')->toBeFile()
+            ->and($directory.'/charts/beacon-demo/values.local.secrets.example.yaml')->toBeFile()
             ->and($directory.'/charts/beacon-demo/values.staging.yaml')->toBeFile()
             ->and($directory.'/charts/beacon-demo/values.production.yaml')->toBeFile()
+            ->and(file_get_contents($directory.'/.gitignore'))->toContain('/charts/*/values.*.secrets.yaml')
             ->and($manifest['require'])->toHaveKey('laravel/octane')
             ->and($manifest['scripts'])->toMatchArray([
                 'test' => '@php artisan test',
@@ -227,6 +246,8 @@ it('is idempotent when the installer is run twice with the same answers', functi
         runtime: 'octane',
         deploymentTarget: 'docker-and-helm',
         updateComposerScripts: true,
+        secretHandling: 'managed-secret',
+        existingSecretName: null,
     ));
     fakeOctaneComposerRequire($directory);
 
@@ -274,6 +295,8 @@ it('fails gracefully when octane installation cannot be completed', function ():
         runtime: 'octane',
         deploymentTarget: 'docker',
         updateComposerScripts: false,
+        secretHandling: 'managed-secret',
+        existingSecretName: null,
     ));
 
     $this->artisan('beacon:install', ['--no-interaction' => true])

@@ -31,8 +31,12 @@ resources:
     memory: 1Gi
 
 env:
-  APP_ENV: production
   LOG_CHANNEL: stderr
+
+secret:
+  create: {{create_managed_secret}}
+  existingSecretName: "{{existing_secret_name}}"
+  env: {}
 
 podAnnotations: {}
 

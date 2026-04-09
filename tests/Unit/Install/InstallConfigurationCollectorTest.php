@@ -17,7 +17,9 @@ it('builds a default install configuration from the application context', functi
         ->and($configuration->applicationName)->toBe('Beacon Demo')
         ->and($configuration->runtime)->toBe('php-fpm')
         ->and($configuration->deploymentTarget)->toBe('docker-and-helm')
-        ->and($configuration->updateComposerScripts)->toBeTrue();
+        ->and($configuration->updateComposerScripts)->toBeTrue()
+        ->and($configuration->secretHandling)->toBe('managed-secret')
+        ->and($configuration->existingSecretName)->toBeNull();
 });
 
 it('falls back to the base path name when no application name is provided', function (): void {
@@ -71,6 +73,20 @@ it('collects prompt answers into a structured install configuration', function (
 
             return false;
         }
+
+        protected function askSecretHandling(string $default): string
+        {
+            expect($default)->toBe('managed-secret');
+
+            return 'existing-secret';
+        }
+
+        protected function askExistingSecretName(string $default): string
+        {
+            expect($default)->toBe('beacon-app-env');
+
+            return 'shared-platform-env';
+        }
     };
 
     $configuration = $collector->collect(
@@ -84,5 +100,7 @@ it('collects prompt answers into a structured install configuration', function (
         'runtime' => 'octane',
         'deployment_target' => 'helm',
         'update_composer_scripts' => false,
+        'secret_handling' => 'existing-secret',
+        'existing_secret_name' => 'shared-platform-env',
     ]);
 });

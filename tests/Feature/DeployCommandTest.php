@@ -112,6 +112,49 @@ it('deploys to the current Kubernetes context when running non-interactively', f
     }
 });
 
+it('includes a secret overlay when one exists for the selected environment', function (): void {
+    $directory = beaconTestApplicationDirectory();
+    $originalBasePath = $this->app->basePath();
+
+    $this->app->setBasePath($directory);
+    $this->app['config']->set('app.name', 'Beacon Demo');
+
+    mkdir($directory.'/charts/beacon-demo', 0755, true);
+    touch($directory.'/charts/beacon-demo/values.yaml');
+    touch($directory.'/charts/beacon-demo/values.local.yaml');
+    touch($directory.'/charts/beacon-demo/values.local.secrets.yaml');
+    touch($directory.'/charts/beacon-demo/values.staging.yaml');
+    touch($directory.'/charts/beacon-demo/values.production.yaml');
+    fakeKubernetesContextDiscovery();
+
+    try {
+        $this->artisan('beacon:deploy', ['--no-interaction' => true])->assertSuccessful();
+
+        Process::assertRan(fn ($process) => $process->path === $directory
+            && $process->command === [
+                'helm',
+                'upgrade',
+                '--install',
+                'beacon-demo',
+                './charts/beacon-demo',
+                '-f',
+                './charts/beacon-demo/values.yaml',
+                '-f',
+                './charts/beacon-demo/values.local.yaml',
+                '-f',
+                './charts/beacon-demo/values.local.secrets.yaml',
+                '--namespace',
+                'default',
+                '--create-namespace',
+                '--kube-context',
+                'rancher-desktop',
+            ]);
+    } finally {
+        $this->app->setBasePath($originalBasePath);
+        removeBeaconTestDirectory($directory);
+    }
+});
+
 it('allows the user to choose a Kubernetes context and namespace interactively', function (): void {
     if (! supportsDeployPendingPromptExpectations()) {
         $this->markTestSkipped('Pending command prompt expectations are not reliable on Laravel 11.');

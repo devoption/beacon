@@ -17,8 +17,9 @@ final class HelmReleaseDeployer
         string $context,
         string $sharedValuesPath,
         string $environmentValuesPath,
+        ?string $secretValuesPath = null,
     ): string {
-        $result = Process::path($basePath)->run([
+        $command = [
             'helm',
             'upgrade',
             '--install',
@@ -28,12 +29,23 @@ final class HelmReleaseDeployer
             $sharedValuesPath,
             '-f',
             $environmentValuesPath,
+        ];
+
+        if ($secretValuesPath !== null) {
+            $command[] = '-f';
+            $command[] = $secretValuesPath;
+        }
+
+        $command = [
+            ...$command,
             '--namespace',
             $namespace,
             '--create-namespace',
             '--kube-context',
             $context,
-        ]);
+        ];
+
+        $result = Process::path($basePath)->run($command);
 
         if (! $result->successful()) {
             $errorOutput = trim($result->errorOutput());

@@ -7,6 +7,7 @@ namespace DevOption\Beacon\Install;
 use DevOption\Beacon\Composer\ComposerScriptsUpdater;
 use DevOption\Beacon\Docker\DockerfileGenerator;
 use DevOption\Beacon\Filesystem\ExistingFileBehavior;
+use DevOption\Beacon\Filesystem\GitignoreUpdater;
 use DevOption\Beacon\Helm\HelmChartGenerator;
 use DevOption\Beacon\Octane\OctaneInstaller;
 
@@ -17,6 +18,7 @@ final readonly class InstallWorkflow
         private DockerfileGenerator $dockerfileGenerator,
         private HelmChartGenerator $helmChartGenerator,
         private ComposerScriptsUpdater $composerScriptsUpdater,
+        private GitignoreUpdater $gitignoreUpdater,
     ) {
     }
 
@@ -41,6 +43,13 @@ final readonly class InstallWorkflow
             )
             : null;
 
-        return new InstallResult($octane, $dockerfile, $helmChart, $composerManifest);
+        $gitignore = $configuration->usesHelm()
+            ? $this->gitignoreUpdater->ensureEntries(
+                rtrim($basePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'.gitignore',
+                ['/charts/*/values.*.secrets.yaml'],
+            )
+            : null;
+
+        return new InstallResult($octane, $dockerfile, $helmChart, $composerManifest, $gitignore);
     }
 }
