@@ -29,7 +29,7 @@ it('adds beacon build and deploy scripts without clobbering unrelated composer s
     expect($manifest['scripts'])->toBe([
         'test' => '@php artisan test',
         'beacon:build' => 'docker build --file Dockerfile --tag beacon-demo:latest .',
-        'beacon:deploy' => 'helm upgrade --install beacon-demo ./charts/beacon-demo --namespace default --create-namespace',
+        'beacon:deploy' => '@php artisan beacon:deploy',
     ])
         ->and($manifest['scripts-descriptions'])->toBe([
             'test' => 'Run the application test suite.',
@@ -116,7 +116,7 @@ it('writes the updated composer manifest back to disk', function (): void {
             ->and($manifest['scripts'])->toBe([
                 'test' => '@php artisan test',
                 'beacon:build' => 'docker build --file Dockerfile --tag beacon-demo:latest .',
-                'beacon:deploy' => 'helm upgrade --install beacon-demo ./charts/beacon-demo --namespace default --create-namespace',
+                'beacon:deploy' => '@php artisan beacon:deploy',
             ])
             ->and($manifest['scripts-descriptions'])->toBe([
                 'beacon:build' => 'Build the Beacon production Docker image.',

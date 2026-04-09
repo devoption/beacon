@@ -140,7 +140,7 @@ it('guides the user through the install skeleton with prompts', function (): voi
             ->and($manifest['scripts'])->toMatchArray([
                 'test' => '@php artisan test',
                 'beacon:build' => 'docker build --file Dockerfile --tag beacon-demo:latest .',
-                'beacon:deploy' => 'helm upgrade --install beacon-demo ./charts/beacon-demo --namespace default --create-namespace',
+                'beacon:deploy' => '@php artisan beacon:deploy',
             ])
             ->and($manifest['scripts-descriptions'])->toMatchArray([
                 'beacon:build' => 'Build the Beacon production Docker image.',
@@ -198,7 +198,7 @@ it('runs the install workflow from collected configuration', function (): void {
             ->and($manifest['scripts'])->toMatchArray([
                 'test' => '@php artisan test',
                 'beacon:build' => 'docker build --file Dockerfile --tag beacon-demo:latest .',
-                'beacon:deploy' => 'helm upgrade --install beacon-demo ./charts/beacon-demo --namespace default --create-namespace',
+                'beacon:deploy' => '@php artisan beacon:deploy',
             ])
             ->and($manifest['scripts-descriptions'])->toMatchArray([
                 'beacon:build' => 'Build the Beacon production Docker image.',
