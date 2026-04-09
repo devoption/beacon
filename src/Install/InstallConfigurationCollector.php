@@ -20,10 +20,11 @@ class InstallConfigurationCollector
         ?string $applicationName = null,
         bool $interactive = true,
     ): InstallConfiguration {
+        $ingressProviderRecommendation = $this->ingressProviderRecommendationRepository?->recommend($basePath);
         $defaults = $this->defaultConfiguration(
             $basePath,
             $applicationName,
-            $this->ingressProviderRecommendationRepository?->recommend($basePath),
+            $ingressProviderRecommendation,
         );
 
         if (! $interactive) {
@@ -34,7 +35,7 @@ class InstallConfigurationCollector
         $runtime = $this->askRuntime($defaults->runtime);
         $deploymentTarget = $this->askDeploymentTarget($defaults->deploymentTarget);
         $ingressProvider = $this->usesHelm($deploymentTarget)
-            ? $this->askIngressProvider($defaults->ingressProvider, $this->ingressProviderRecommendationRepository?->recommend($basePath))
+            ? $this->askIngressProvider($defaults->ingressProvider, $ingressProviderRecommendation)
             : 'none';
         $updateComposerScripts = $this->askUpdateComposerScripts($defaults->updateComposerScripts);
         $secretHandling = $this->usesHelm($deploymentTarget)

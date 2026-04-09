@@ -5,6 +5,7 @@ declare(strict_types=1);
 use DevOption\Beacon\Install\InstallConfiguration;
 use DevOption\Beacon\Install\InstallConfigurationCollector;
 use DevOption\Beacon\Install\IngressProviderRecommendation;
+use DevOption\Beacon\Install\IngressProviderRecommendationRepository;
 
 it('builds a default install configuration from the application context', function (): void {
     $collector = new InstallConfigurationCollector;
