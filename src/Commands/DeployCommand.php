@@ -123,12 +123,12 @@ class DeployCommand extends Command
 
     private function chartAbsolutePath(string $basePath, string $chartPath): string
     {
-        if (str_starts_with($chartPath, './')) {
-            return rtrim($basePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.ltrim(substr($chartPath, 2), DIRECTORY_SEPARATOR);
+        if ($this->isAbsolutePath($chartPath)) {
+            return $chartPath;
         }
 
-        if (str_starts_with($chartPath, DIRECTORY_SEPARATOR)) {
-            return $chartPath;
+        if (preg_match('/^\.[\/\\\\]/', $chartPath) === 1) {
+            return rtrim($basePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.ltrim(substr($chartPath, 2), '/\\');
         }
 
         return rtrim($basePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$chartPath;
@@ -247,17 +247,39 @@ class DeployCommand extends Command
         $this->components->twoColumnDetail('Namespace', $namespace);
     }
 
-    private function sharedValuesPath(string $chartPath): string
-    {
-        return rtrim($chartPath, '/').'/values.yaml';
-    }
-
     private function environmentValuesPath(
         string $chartPath,
         DeploymentEnvironmentProfiles $profiles,
         string $environment,
     ): string {
-        return rtrim($chartPath, '/').'/'.$profiles->overlayRelativePath($environment);
+        $path = $this->joinHelmPath($chartPath, $profiles->overlayRelativePath($environment));
+
+        if (! is_file($this->chartAbsolutePath($this->laravel->basePath(), $path))) {
+            throw new RuntimeException(sprintf(
+                'Unable to locate the [%s] deployment environment overlay. Re-run Beacon install to generate environment profile values files or pass a chart with overlays.',
+                $environment,
+            ));
+        }
+
+        return $path;
+    }
+
+    private function sharedValuesPath(string $chartPath): string
+    {
+        return $this->joinHelmPath($chartPath, 'values.yaml');
+    }
+
+    private function joinHelmPath(string $basePath, string $relativePath): string
+    {
+        return rtrim(str_replace('\\', '/', $basePath), '/').'/'.$relativePath;
+    }
+
+    private function isAbsolutePath(string $path): bool
+    {
+        return str_starts_with($path, '/')
+            || str_starts_with($path, '\\')
+            || preg_match('/^[A-Za-z]:[\/\\\\]/', $path) === 1
+            || preg_match('/^\\\\\\\\[^\\\\]+\\\\[^\\\\]+/', $path) === 1;
     }
 
     private function applicationSlug(string $applicationName): string

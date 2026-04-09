@@ -83,7 +83,7 @@ Example managed scripts:
 }
 ```
 
-Beacon now treats `values.yaml` as the shared base chart configuration and generates environment-specific overlays for `local`, `staging`, and `production`. The deploy command applies the shared file plus the selected environment overlay when it runs Helm.
+Beacon generates `values.yaml` as the default chart values file and also creates environment-specific overlays for `local`, `staging`, and `production`. The deploy command always applies `values.yaml` first, then layers the selected environment values file on top when it runs Helm.
 
 ## Rerunning the installer
 

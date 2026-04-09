@@ -39,8 +39,8 @@ function expectBeaconDeployPrompts(
             $environment,
             [
                 'local' => 'Local',
-                'production' => 'Production',
                 'staging' => 'Staging',
+                'production' => 'Production',
             ],
         )
         ->expectsChoice(
@@ -347,6 +347,27 @@ it('allows an explicit environment to be selected non-interactively', function (
                 '--kube-context',
                 'rancher-desktop',
             ]);
+    } finally {
+        $this->app->setBasePath($originalBasePath);
+        removeBeaconTestDirectory($directory);
+    }
+});
+
+it('fails clearly when the selected environment overlay does not exist', function (): void {
+    $directory = beaconTestApplicationDirectory();
+    $originalBasePath = $this->app->basePath();
+
+    $this->app->setBasePath($directory);
+    $this->app['config']->set('app.name', 'Beacon Demo');
+
+    mkdir($directory.'/charts/beacon-demo', 0755, true);
+    touch($directory.'/charts/beacon-demo/values.yaml');
+    fakeKubernetesContextDiscovery();
+
+    try {
+        $this->artisan('beacon:deploy', ['--environment' => 'staging', '--no-interaction' => true])
+            ->expectsOutputToContain('Beacon deployment failed: Unable to locate the [staging] deployment environment overlay.')
+            ->assertExitCode(1);
     } finally {
         $this->app->setBasePath($originalBasePath);
         removeBeaconTestDirectory($directory);
