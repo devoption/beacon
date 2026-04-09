@@ -33,9 +33,7 @@ final class HelmReleaseDeployer
             $errorOutput = trim($result->errorOutput());
 
             throw new RuntimeException(
-                $errorOutput !== ''
-                    ? sprintf('Beacon deploy failed. %s', $errorOutput)
-                    : 'Beacon deploy failed.',
+                $errorOutput !== '' ? $errorOutput : 'Helm command failed.',
             );
         }
 

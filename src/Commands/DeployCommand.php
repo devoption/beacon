@@ -172,11 +172,11 @@ class DeployCommand extends Command
             return 'default';
         }
 
-        return text(
+        return trim(text(
             label: 'Which namespace should Beacon deploy into?',
             default: 'default',
             validate: static fn (string $value): ?string => trim($value) === '' ? 'A namespace is required.' : null,
-        );
+        ));
     }
 
     private function displayDeploymentSummary(
@@ -199,6 +199,6 @@ class DeployCommand extends Command
         $normalized = substr($normalized, 0, 63);
         $normalized = trim($normalized, '-');
 
-        return $normalized !== '' ? $normalized : '';
+        return $normalized !== '' ? $normalized : 'beacon';
     }
 }
