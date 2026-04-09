@@ -15,6 +15,8 @@ final class HelmReleaseDeployer
         string $chartPath,
         string $namespace,
         string $context,
+        string $sharedValuesPath,
+        string $environmentValuesPath,
     ): string {
         $result = Process::path($basePath)->run([
             'helm',
@@ -22,6 +24,10 @@ final class HelmReleaseDeployer
             '--install',
             $release,
             $chartPath,
+            '-f',
+            $sharedValuesPath,
+            '-f',
+            $environmentValuesPath,
             '--namespace',
             $namespace,
             '--create-namespace',

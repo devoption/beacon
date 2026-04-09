@@ -12,6 +12,7 @@ Current MVP features:
 - optional Laravel Octane installation when the Octane runtime is selected
 - Dockerfile generation for `php-fpm` or `octane`
 - Helm chart scaffolding under `charts/<application-slug>`
+- named Helm environment overlays for `local`, `staging`, and `production`
 - managed Composer scripts for `beacon:build` and `beacon:deploy`
 - Pest coverage, Laravel compatibility CI, and automated semantic releases for the package itself
 
@@ -58,6 +59,9 @@ Depending on the options you choose, Beacon generates:
 - `Dockerfile`
 - `charts/<application-slug>/Chart.yaml`
 - `charts/<application-slug>/values.yaml`
+- `charts/<application-slug>/values.local.yaml`
+- `charts/<application-slug>/values.staging.yaml`
+- `charts/<application-slug>/values.production.yaml`
 - `charts/<application-slug>/templates/_helpers.tpl`
 - `charts/<application-slug>/templates/deployment.yaml`
 - `charts/<application-slug>/templates/service.yaml`
@@ -78,6 +82,8 @@ Example managed scripts:
   }
 }
 ```
+
+Beacon generates `values.yaml` as the default chart values file and also creates environment-specific overlays for `local`, `staging`, and `production`. The deploy command always applies `values.yaml` first, then layers the selected environment values file on top when it runs Helm.
 
 ## Rerunning the installer
 

@@ -28,11 +28,21 @@ function fakeKubernetesContextDiscovery(string $currentContext = 'rancher-deskto
 
 function expectBeaconDeployPrompts(
     PendingCommand $command,
+    string $environment = 'staging',
     string $context = 'staging',
     string $namespace = 'preview',
 ): PendingCommand {
     return $command
         ->expectsPromptsIntro('Beacon will help you choose a Kubernetes deployment target.')
+        ->expectsChoice(
+            'Which deployment environment should Beacon use?',
+            $environment,
+            [
+                'local' => 'Local',
+                'staging' => 'Staging',
+                'production' => 'Production',
+            ],
+        )
         ->expectsChoice(
             'Which Kubernetes context should Beacon deploy to?',
             $context,
@@ -63,12 +73,17 @@ it('deploys to the current Kubernetes context when running non-interactively', f
     $this->app['config']->set('app.name', 'Beacon Demo');
 
     mkdir($directory.'/charts/beacon-demo', 0755, true);
+    touch($directory.'/charts/beacon-demo/values.yaml');
+    touch($directory.'/charts/beacon-demo/values.local.yaml');
+    touch($directory.'/charts/beacon-demo/values.staging.yaml');
+    touch($directory.'/charts/beacon-demo/values.production.yaml');
     fakeKubernetesContextDiscovery();
 
     try {
         $this->artisan('beacon:deploy', ['--no-interaction' => true])
             ->expectsOutputToContain('Deployment target')
             ->expectsOutputToContain('beacon-demo')
+            ->expectsOutputToContain('local')
             ->expectsOutputToContain('rancher-desktop')
             ->expectsOutputToContain('default')
             ->expectsOutputToContain('Beacon deployment completed.')
@@ -81,6 +96,10 @@ it('deploys to the current Kubernetes context when running non-interactively', f
                 '--install',
                 'beacon-demo',
                 './charts/beacon-demo',
+                '-f',
+                './charts/beacon-demo/values.yaml',
+                '-f',
+                './charts/beacon-demo/values.local.yaml',
                 '--namespace',
                 'default',
                 '--create-namespace',
@@ -105,12 +124,15 @@ it('allows the user to choose a Kubernetes context and namespace interactively',
     $this->app['config']->set('app.name', 'Beacon Demo');
 
     mkdir($directory.'/charts/beacon-demo', 0755, true);
+    touch($directory.'/charts/beacon-demo/values.yaml');
+    touch($directory.'/charts/beacon-demo/values.local.yaml');
+    touch($directory.'/charts/beacon-demo/values.staging.yaml');
+    touch($directory.'/charts/beacon-demo/values.production.yaml');
     fakeKubernetesContextDiscovery();
 
     try {
         expectBeaconDeployPrompts($this->artisan('beacon:deploy'))
             ->expectsOutputToContain('Deployment target')
-            ->expectsOutputToContain('staging')
             ->expectsOutputToContain('preview')
             ->expectsOutputToContain('Beacon deployment completed.')
             ->assertSuccessful();
@@ -122,6 +144,10 @@ it('allows the user to choose a Kubernetes context and namespace interactively',
                 '--install',
                 'beacon-demo',
                 './charts/beacon-demo',
+                '-f',
+                './charts/beacon-demo/values.yaml',
+                '-f',
+                './charts/beacon-demo/values.staging.yaml',
                 '--namespace',
                 'preview',
                 '--create-namespace',
@@ -146,6 +172,10 @@ it('trims the chosen namespace before invoking helm', function (): void {
     $this->app['config']->set('app.name', 'Beacon Demo');
 
     mkdir($directory.'/charts/beacon-demo', 0755, true);
+    touch($directory.'/charts/beacon-demo/values.yaml');
+    touch($directory.'/charts/beacon-demo/values.local.yaml');
+    touch($directory.'/charts/beacon-demo/values.staging.yaml');
+    touch($directory.'/charts/beacon-demo/values.production.yaml');
     fakeKubernetesContextDiscovery();
 
     try {
@@ -160,6 +190,10 @@ it('trims the chosen namespace before invoking helm', function (): void {
                 '--install',
                 'beacon-demo',
                 './charts/beacon-demo',
+                '-f',
+                './charts/beacon-demo/values.yaml',
+                '-f',
+                './charts/beacon-demo/values.staging.yaml',
                 '--namespace',
                 'preview',
                 '--create-namespace',
@@ -180,6 +214,10 @@ it('falls back to the beacon chart slug when the application name normalizes to 
     $this->app['config']->set('app.name', '!!!');
 
     mkdir($directory.'/charts/beacon', 0755, true);
+    touch($directory.'/charts/beacon/values.yaml');
+    touch($directory.'/charts/beacon/values.local.yaml');
+    touch($directory.'/charts/beacon/values.staging.yaml');
+    touch($directory.'/charts/beacon/values.production.yaml');
     fakeKubernetesContextDiscovery();
 
     try {
@@ -192,6 +230,10 @@ it('falls back to the beacon chart slug when the application name normalizes to 
                 '--install',
                 'beacon',
                 './charts/beacon',
+                '-f',
+                './charts/beacon/values.yaml',
+                '-f',
+                './charts/beacon/values.local.yaml',
                 '--namespace',
                 'default',
                 '--create-namespace',
@@ -214,6 +256,10 @@ it('fails clearly when kubernetes contexts cannot be discovered', function (): v
 
     $this->app->setBasePath($directory);
     mkdir($directory.'/charts/beacon-demo', 0755, true);
+    touch($directory.'/charts/beacon-demo/values.yaml');
+    touch($directory.'/charts/beacon-demo/values.local.yaml');
+    touch($directory.'/charts/beacon-demo/values.staging.yaml');
+    touch($directory.'/charts/beacon-demo/values.production.yaml');
     $this->app['config']->set('app.name', 'Beacon Demo');
 
     try {
@@ -234,6 +280,10 @@ it('surfaces helm failures without duplicating the beacon deployment prefix', fu
     $this->app['config']->set('app.name', 'Beacon Demo');
 
     mkdir($directory.'/charts/beacon-demo', 0755, true);
+    touch($directory.'/charts/beacon-demo/values.yaml');
+    touch($directory.'/charts/beacon-demo/values.local.yaml');
+    touch($directory.'/charts/beacon-demo/values.staging.yaml');
+    touch($directory.'/charts/beacon-demo/values.production.yaml');
 
     Process::fake(function ($process) {
         if ($process->command === ['kubectl', 'config', 'get-contexts', '-o', 'name']) {
@@ -254,6 +304,69 @@ it('surfaces helm failures without duplicating the beacon deployment prefix', fu
     try {
         $this->artisan('beacon:deploy', ['--no-interaction' => true])
             ->expectsOutputToContain('Beacon deployment failed: release failed')
+            ->assertExitCode(1);
+    } finally {
+        $this->app->setBasePath($originalBasePath);
+        removeBeaconTestDirectory($directory);
+    }
+});
+
+it('allows an explicit environment to be selected non-interactively', function (): void {
+    $directory = beaconTestApplicationDirectory();
+    $originalBasePath = $this->app->basePath();
+
+    $this->app->setBasePath($directory);
+    $this->app['config']->set('app.name', 'Beacon Demo');
+
+    mkdir($directory.'/charts/beacon-demo', 0755, true);
+    touch($directory.'/charts/beacon-demo/values.yaml');
+    touch($directory.'/charts/beacon-demo/values.local.yaml');
+    touch($directory.'/charts/beacon-demo/values.staging.yaml');
+    touch($directory.'/charts/beacon-demo/values.production.yaml');
+    fakeKubernetesContextDiscovery();
+
+    try {
+        $this->artisan('beacon:deploy', ['--environment' => 'production', '--no-interaction' => true])
+            ->expectsOutputToContain('production')
+            ->assertSuccessful();
+
+        Process::assertRan(fn ($process) => $process->path === $directory
+            && $process->command === [
+                'helm',
+                'upgrade',
+                '--install',
+                'beacon-demo',
+                './charts/beacon-demo',
+                '-f',
+                './charts/beacon-demo/values.yaml',
+                '-f',
+                './charts/beacon-demo/values.production.yaml',
+                '--namespace',
+                'default',
+                '--create-namespace',
+                '--kube-context',
+                'rancher-desktop',
+            ]);
+    } finally {
+        $this->app->setBasePath($originalBasePath);
+        removeBeaconTestDirectory($directory);
+    }
+});
+
+it('fails clearly when the selected environment overlay does not exist', function (): void {
+    $directory = beaconTestApplicationDirectory();
+    $originalBasePath = $this->app->basePath();
+
+    $this->app->setBasePath($directory);
+    $this->app['config']->set('app.name', 'Beacon Demo');
+
+    mkdir($directory.'/charts/beacon-demo', 0755, true);
+    touch($directory.'/charts/beacon-demo/values.yaml');
+    fakeKubernetesContextDiscovery();
+
+    try {
+        $this->artisan('beacon:deploy', ['--environment' => 'staging', '--no-interaction' => true])
+            ->expectsOutputToContain('Beacon deployment failed: Unable to locate the [staging] deployment environment overlay.')
             ->assertExitCode(1);
     } finally {
         $this->app->setBasePath($originalBasePath);

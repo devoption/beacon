@@ -1,0 +1,8 @@
+replicaCount: 3
+
+image:
+  tag: production
+
+env:
+  APP_ENV: production
+  APP_DEBUG: "false"

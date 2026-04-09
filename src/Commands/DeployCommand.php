@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace DevOption\Beacon\Commands;
 
 use DevOption\Beacon\Deploy\HelmReleaseDeployer;
+use DevOption\Beacon\Deploy\DeploymentEnvironmentProfileRepository;
+use DevOption\Beacon\Deploy\DeploymentEnvironmentProfiles;
 use DevOption\Beacon\Deploy\KubernetesContextRepository;
 use DevOption\Beacon\Deploy\KubernetesContexts;
 use Illuminate\Console\Command;
@@ -20,6 +22,7 @@ use function Laravel\Prompts\text;
 class DeployCommand extends Command
 {
     protected $signature = 'beacon:deploy
+        {--environment= : Deployment environment profile to use}
         {--context= : Kubernetes context to deploy to}
         {--namespace= : Kubernetes namespace to deploy into}
         {--release= : Helm release name override}
@@ -28,6 +31,7 @@ class DeployCommand extends Command
     protected $description = 'Deploy the Beacon Helm release';
 
     public function handle(
+        DeploymentEnvironmentProfileRepository $environmentProfileRepository,
         KubernetesContextRepository $contextRepository,
         HelmReleaseDeployer $helmReleaseDeployer,
     ): int {
@@ -36,12 +40,15 @@ class DeployCommand extends Command
         try {
             $basePath = $this->laravel->basePath();
             $chartPath = $this->chartPath($basePath);
+            $chartAbsolutePath = $this->chartAbsolutePath($basePath, $chartPath);
             $release = $this->releaseName($chartPath);
+            $environmentProfiles = $environmentProfileRepository->discover($chartAbsolutePath);
+            $environment = $this->environment($environmentProfiles);
             $contexts = $contextRepository->discover($basePath);
             $context = $this->deploymentContext($contexts);
             $namespace = $this->namespace();
 
-            $this->displayDeploymentSummary($release, $chartPath, $context, $namespace);
+            $this->displayDeploymentSummary($release, $chartPath, $environment, $context, $namespace);
 
             if ($this->input->isInteractive() && ! confirm(
                 label: 'Continue with this deployment target?',
@@ -58,6 +65,8 @@ class DeployCommand extends Command
                 chartPath: $chartPath,
                 namespace: $namespace,
                 context: $context,
+                sharedValuesPath: $this->sharedValuesPath($chartPath),
+                environmentValuesPath: $this->environmentValuesPath($chartPath, $environmentProfiles, $environment),
             );
         } catch (Throwable $throwable) {
             $message = trim($throwable->getMessage());
@@ -112,6 +121,19 @@ class DeployCommand extends Command
         throw new RuntimeException('Unable to determine which Helm chart to deploy. Pass --chart= to choose one explicitly.');
     }
 
+    private function chartAbsolutePath(string $basePath, string $chartPath): string
+    {
+        if ($this->isAbsolutePath($chartPath)) {
+            return $chartPath;
+        }
+
+        if (preg_match('/^\.[\/\\\\]/', $chartPath) === 1) {
+            return rtrim($basePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.ltrim(substr($chartPath, 2), '/\\');
+        }
+
+        return rtrim($basePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$chartPath;
+    }
+
     private function releaseName(string $chartPath): string
     {
         $configuredRelease = $this->option('release');
@@ -127,6 +149,37 @@ class DeployCommand extends Command
         }
 
         return $release;
+    }
+
+    private function environment(DeploymentEnvironmentProfiles $profiles): string
+    {
+        $configuredEnvironment = $this->option('environment');
+
+        if (is_string($configuredEnvironment) && trim($configuredEnvironment) !== '') {
+            $configuredEnvironment = trim($configuredEnvironment);
+
+            if (! in_array($configuredEnvironment, $profiles->names, true)) {
+                throw new RuntimeException(sprintf(
+                    'The selected deployment environment [%s] is not available.',
+                    $configuredEnvironment,
+                ));
+            }
+
+            return $configuredEnvironment;
+        }
+
+        if (! $this->input->isInteractive()) {
+            return $profiles->default();
+        }
+
+        /** @var string $selectedEnvironment */
+        $selectedEnvironment = select(
+            label: 'Which deployment environment should Beacon use?',
+            options: $profiles->promptOptions(),
+            default: $profiles->default(),
+        );
+
+        return $selectedEnvironment;
     }
 
     private function deploymentContext(KubernetesContexts $contexts): string
@@ -182,14 +235,51 @@ class DeployCommand extends Command
     private function displayDeploymentSummary(
         string $release,
         string $chartPath,
+        string $environment,
         string $context,
         string $namespace,
     ): void {
         $this->components->info('Deployment target');
         $this->components->twoColumnDetail('Release', $release);
         $this->components->twoColumnDetail('Chart', $chartPath);
+        $this->components->twoColumnDetail('Environment', $environment);
         $this->components->twoColumnDetail('Context', $context);
         $this->components->twoColumnDetail('Namespace', $namespace);
+    }
+
+    private function environmentValuesPath(
+        string $chartPath,
+        DeploymentEnvironmentProfiles $profiles,
+        string $environment,
+    ): string {
+        $path = $this->joinHelmPath($chartPath, $profiles->overlayRelativePath($environment));
+
+        if (! is_file($this->chartAbsolutePath($this->laravel->basePath(), $path))) {
+            throw new RuntimeException(sprintf(
+                'Unable to locate the [%s] deployment environment overlay. Re-run Beacon install to generate environment profile values files or pass a chart with overlays.',
+                $environment,
+            ));
+        }
+
+        return $path;
+    }
+
+    private function sharedValuesPath(string $chartPath): string
+    {
+        return $this->joinHelmPath($chartPath, 'values.yaml');
+    }
+
+    private function joinHelmPath(string $basePath, string $relativePath): string
+    {
+        return rtrim(str_replace('\\', '/', $basePath), '/').'/'.$relativePath;
+    }
+
+    private function isAbsolutePath(string $path): bool
+    {
+        return str_starts_with($path, '/')
+            || str_starts_with($path, '\\')
+            || preg_match('/^[A-Za-z]:[\/\\\\]/', $path) === 1
+            || preg_match('/^\\\\\\\\[^\\\\]+\\\\[^\\\\]+/', $path) === 1;
     }
 
     private function applicationSlug(string $applicationName): string
