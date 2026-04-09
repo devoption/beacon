@@ -38,6 +38,7 @@ it('renders a helm chart scaffold for the php-fpm runtime', function (): void {
         ->and($files['Chart.yaml'])->toContain('Beacon Demo')
         ->and($files['values.yaml'])->toContain('runtime: php-fpm')
         ->and($files['values.yaml'])->toContain('port: 9000')
+        ->and($files['values.yaml'])->toContain('provider: none')
         ->and($files['values.yaml'])->toContain('create: true')
         ->and($files['values.local.yaml'])->toContain('APP_ENV: local')
         ->and($files['values.local.secrets.example.yaml'])->toContain('# APP_KEY: base64:replace-me')
@@ -60,6 +61,23 @@ it('renders octane-specific helm values', function (): void {
 
     expect($files['values.yaml'])->toContain('runtime: octane')
         ->and($files['values.yaml'])->toContain('port: 8000');
+});
+
+it('renders ingress provider values from the selected install strategy', function (): void {
+    $generator = new HelmChartGenerator(new SafeFileWriter);
+    $configuration = new InstallConfiguration(
+        applicationName: 'Beacon Demo',
+        runtime: 'octane',
+        deploymentTarget: 'docker-and-helm',
+        updateComposerScripts: false,
+        ingressProvider: 'traefik',
+    );
+
+    $files = $generator->renderFiles($configuration);
+
+    expect($files['values.yaml'])->toContain('provider: traefik')
+        ->and($files['values.yaml'])->toContain('enabled: true')
+        ->and($files['values.yaml'])->toContain('className: "traefik"');
 });
 
 it('renders existing secret references when the user chooses an external kubernetes secret', function (): void {

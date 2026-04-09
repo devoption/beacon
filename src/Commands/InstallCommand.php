@@ -68,6 +68,7 @@ class InstallCommand extends Command
         $this->components->twoColumnDetail('Scaffolding', $configuration->deploymentTargetLabel());
 
         if ($configuration->usesHelm()) {
+            $this->components->twoColumnDetail('Ingress', $configuration->ingressProviderLabel());
             $this->components->twoColumnDetail('Secrets', $configuration->secretHandlingLabel());
 
             if ($configuration->existingSecretName !== null) {

@@ -33,6 +33,15 @@ final readonly class InstallConfiguration
         'existing-secret' => 'Existing Kubernetes secret',
     ];
 
+    /**
+     * @var array<string, string>
+     */
+    public const INGRESS_PROVIDER_OPTIONS = [
+        'none' => 'Disabled',
+        'nginx' => 'Ingress NGINX',
+        'traefik' => 'Traefik',
+    ];
+
     public function __construct(
         public string $applicationName,
         public string $runtime,
@@ -40,6 +49,7 @@ final readonly class InstallConfiguration
         public bool $updateComposerScripts,
         public string $secretHandling = 'managed-secret',
         public ?string $existingSecretName = null,
+        public string $ingressProvider = 'none',
     ) {
         if (! array_key_exists($this->runtime, self::RUNTIME_OPTIONS)) {
             throw new InvalidArgumentException(sprintf('Unsupported runtime [%s].', $this->runtime));
@@ -59,6 +69,10 @@ final readonly class InstallConfiguration
 
         if ($this->secretHandling !== 'existing-secret' && $this->existingSecretName !== null) {
             throw new InvalidArgumentException('An existing secret name may only be provided when using the existing Kubernetes secret mode.');
+        }
+
+        if (! array_key_exists($this->ingressProvider, self::INGRESS_PROVIDER_OPTIONS)) {
+            throw new InvalidArgumentException(sprintf('Unsupported ingress provider [%s].', $this->ingressProvider));
         }
     }
 
@@ -82,6 +96,26 @@ final readonly class InstallConfiguration
         return in_array($this->deploymentTarget, ['helm', 'docker-and-helm'], true);
     }
 
+    public function ingressProviderLabel(): string
+    {
+        return self::INGRESS_PROVIDER_OPTIONS[$this->ingressProvider];
+    }
+
+    public function ingressEnabled(): bool
+    {
+        return $this->ingressProvider !== 'none';
+    }
+
+    public function ingressClassName(): string
+    {
+        return match ($this->ingressProvider) {
+            'none' => '',
+            'nginx' => 'nginx',
+            'traefik' => 'traefik',
+            default => throw new InvalidArgumentException(sprintf('Unsupported ingress provider [%s].', $this->ingressProvider)),
+        };
+    }
+
     /**
      * @return array{
      *     application_name: string,
@@ -89,7 +123,8 @@ final readonly class InstallConfiguration
      *     deployment_target: string,
      *     update_composer_scripts: bool,
      *     secret_handling: string,
-     *     existing_secret_name: ?string
+     *     existing_secret_name: ?string,
+     *     ingress_provider: string
      * }
      */
     public function toArray(): array
@@ -101,6 +136,7 @@ final readonly class InstallConfiguration
             'update_composer_scripts' => $this->updateComposerScripts,
             'secret_handling' => $this->secretHandling,
             'existing_secret_name' => $this->existingSecretName,
+            'ingress_provider' => $this->ingressProvider,
         ];
     }
 }
