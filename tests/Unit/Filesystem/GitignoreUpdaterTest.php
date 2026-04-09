@@ -38,3 +38,20 @@ it('returns unchanged when all gitignore entries are already present', function 
         removeBeaconTestDirectory($directory);
     }
 });
+
+it('preserves existing line endings and trailing blank lines when appending entries', function (): void {
+    $directory = beaconTestTempDirectory();
+    $path = $directory.'/.gitignore';
+    file_put_contents($path, "/vendor\r\n/build\r\n\r\n");
+
+    $updater = new GitignoreUpdater(new SafeFileWriter);
+
+    try {
+        $result = $updater->ensureEntries($path, ['/charts/*/values.*.secrets.yaml']);
+
+        expect($result->status)->toBe(FileWriteStatus::Overwritten)
+            ->and(file_get_contents($path))->toBe("/vendor\r\n/build\r\n\r\n/charts/*/values.*.secrets.yaml\r\n");
+    } finally {
+        removeBeaconTestDirectory($directory);
+    }
+});

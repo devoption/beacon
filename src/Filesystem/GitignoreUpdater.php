@@ -41,16 +41,29 @@ final readonly class GitignoreUpdater
 
         $lines = $contents === ''
             ? []
-            : (preg_split('/\R/', rtrim($contents, "\r\n")) ?: []);
-        $existingEntries = array_map('trim', $lines);
+            : (preg_split('/\R/', $contents) ?: []);
+        $existingEntries = array_values(array_filter(array_map(
+            static fn (string $line): string => trim($line),
+            $lines,
+        ), static fn (string $line): bool => $line !== ''));
+        $missingEntries = [];
 
         foreach ($entries as $entry) {
             if (! in_array($entry, $existingEntries, true)) {
-                $lines[] = $entry;
+                $missingEntries[] = $entry;
             }
         }
 
-        $updatedContents = implode(PHP_EOL, $lines).PHP_EOL;
+        if ($missingEntries === []) {
+            return $this->writer->write($path, $contents, ExistingFileBehavior::Overwrite);
+        }
+
+        $lineEnding = str_contains($contents, "\r\n") ? "\r\n" : "\n";
+        $separator = $contents === '' || preg_match('/\R\z/', $contents) === 1 ? '' : $lineEnding;
+        $updatedContents = $contents
+            .$separator
+            .implode($lineEnding, $missingEntries)
+            .$lineEnding;
 
         return $this->writer->write($path, $updatedContents, ExistingFileBehavior::Overwrite);
     }

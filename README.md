@@ -97,7 +97,9 @@ Sensitive application values are kept out of the committed environment overlays.
 - adds `/charts/*/values.*.secrets.yaml` to the Laravel app `.gitignore`
 - automatically includes `values.<environment>.secrets.yaml` during `beacon:deploy` when that ignored file exists
 
-If you choose the existing Kubernetes secret mode during installation, Beacon configures the chart to reference that external secret instead of creating its own Secret manifest.
+This keeps secret values out of Git-tracked files, but it does not keep them out of Helm release metadata. When `values.<environment>.secrets.yaml` is passed to Helm, those values are stored in the Helm release Secret or ConfigMap and can remain in release history.
+
+If you choose the existing Kubernetes secret mode during installation, Beacon configures the chart to reference that external secret instead of creating its own Secret manifest. Use that mode, or another workflow that injects secrets outside Helm values files, if you need to avoid persisting secret values in Helm release metadata or history.
 
 ## Rerunning the installer
 
